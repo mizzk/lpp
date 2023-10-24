@@ -57,11 +57,20 @@ int main(int nc, char *np[]) {
 	return 0;
     }
     /* 作成する部分：トークンカウント用の配列？を初期化する */
+	init_idtab();
+
     while((token = scan()) >= 0) {
 	/* 作成する部分：トークンをカウントする */
+		for(i = 0; i < NUMOFTOKEN; i++) {
+			if(token == key[i].keytoken) {
+				id_countup(key[i].keyword);
+				break;
+			}
+		}
     }
     end_scan();
     /* 作成する部分:カウントした結果を出力する */
+	print_idtab();
     return 0;
 }
 

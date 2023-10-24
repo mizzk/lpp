@@ -1,9 +1,15 @@
-#include <ctype.h>
+#include <ctype.h> //文字の分類のため用いる
 
 #include "token-list.h"
 
 FILE *fp = NULL; /* File pointer */
 int cbuf;        /* Character buffer */
+
+/* string attribute */
+char string_attr[MAXSTRSIZE];
+
+/* number attribute */
+int num_attr;
 
 /* Open file */
 int init_scan(char *filename) {
