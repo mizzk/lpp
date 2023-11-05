@@ -86,7 +86,8 @@ int scan(void) {
                 }
                 continue;
             }
-            continue;  // '/'の後に'*'がない場合は読み飛ばす
+            error("This compiler does not support /.");
+            return -1;
         } else if (isalpha(cbuf)) {             // 英字の場合
             while (isalnum(cbuf)) {             // 英数字が続く限り
                 buffer[buffer_index++] = cbuf;  // バッファに格納
@@ -215,13 +216,15 @@ int scan(void) {
         } else if (cbuf == ';') {
             cbuf = fgetc(fp);
             return TSEMI;
+        } else if (cbuf == '|') {
+            error("This compiler does not support |.");
+            return -1;
         }
         // EOFの場合は-1を返す
         else if (cbuf == EOF) {
             return -1;
         } else {
             // どのパターンにも当てはまらない場合は読み飛ばす
-            // error("Scan(): Invalid character.");
             cbuf = fgetc(fp);
             continue;
         }

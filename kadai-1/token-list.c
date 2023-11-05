@@ -31,11 +31,11 @@ int main(int nc, char *np[]) {
     int token, i;
 
     if (nc < 2) {
-        printf("File name id not given.\n");
+        error("File name is not given.");
         return 0;
     }
     if (init_scan(np[1]) < 0) {
-        printf("File %s can not open.\n", np[1]);
+        error("File can not open.");
         return 0;
     }
 
@@ -65,6 +65,6 @@ int main(int nc, char *np[]) {
 }
 
 void error(char *mes) {
-    printf("\n ERROR: %s\n", mes);
+    fprintf(stderr, "\n ERROR: %s\n", mes);
     end_scan();
 }
