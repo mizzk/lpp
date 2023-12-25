@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define NORMAL 0
+#define ERROR 1
+
 #define MAXSTRSIZE 1024
 
 /* Token */
@@ -58,7 +61,7 @@
 
 #define NUMOFTOKEN	49
 
-/* token-list.c */
+/* main.c */
 
 #define KEYWORDSIZE	28
 
@@ -67,7 +70,7 @@ extern struct KEY {
 	int keytoken;
 } key[KEYWORDSIZE];
 
-extern void error(char *mes);
+extern int error(char *mes);
 
 /* scan.c */
 extern int init_scan(char *filename);
@@ -77,8 +80,8 @@ extern char string_attr[MAXSTRSIZE];
 extern int get_linenum(void);
 extern void end_scan(void);
 
-/* id-list.c */
-void init_idtab(void);
-void id_countup(char *np);
-void print_idtab(void);
-void release_idtab(void);
+// /* id-list.c */
+// void init_idtab(void);
+// void id_countup(char *np);
+// void print_idtab(void);
+// void release_idtab(void);

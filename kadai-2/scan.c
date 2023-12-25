@@ -11,7 +11,7 @@ char string_attr[MAXSTRSIZE];
 /* number attribute */
 int num_attr;
 
-int line_num = 1; /* Line number */
+int line_num = 0; /* Line number */
 
 /* Open file */
 int init_scan(char *filename) {
@@ -27,6 +27,10 @@ int init_scan(char *filename) {
 
 /* トークンを一つスキャンする関数*/
 int scan(void) {
+    // scanが初めて呼ばれたときに行番号を1にする
+    if(line_num == 0) {
+        line_num = 1;
+    }
     while (1) {
         char buffer[MAXSTRSIZE] = "";
         int buffer_index = 0;
