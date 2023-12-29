@@ -139,6 +139,7 @@ int scan(void) {
                     cbuf = fgetc(fp);
                     if (cbuf == '\'') {  // エスケープされたクオートの場合
                         buffer[buffer_index++] = cbuf;
+                        buffer[buffer_index++] = cbuf;
                     } else {
                         if(buffer_index > MAXSTRSIZE - 1) {
                             return -1;
@@ -223,9 +224,11 @@ int scan(void) {
         } else if (cbuf == '|') {
             error("This compiler does not support |.");
             return -1;
-        }
+        } else if (cbuf == '~') {
+            error("This compiler does not support ~.");
+            return -1;
         // EOFの場合は-1を返す
-        else if (cbuf == EOF) {
+        } else if (cbuf == EOF) {
             return -1;
         } else {
             // どのパターンにも当てはまらない場合は読み飛ばす
