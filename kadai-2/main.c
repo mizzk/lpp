@@ -1,5 +1,6 @@
 #include "token-list.h"
 
+// 読み込んだトークンを格納する変数
 int token;
 
 /* keyword list */
@@ -29,6 +30,7 @@ char *tokenstr[NUMOFTOKEN + 1] = {
     ":=",      ".",       ",",       ":",       ";",         "read",   "write",
     "break"};
 
+// 行番号とともにエラーメッセージを出力する関数
 int error(char *mes) {
     fprintf(stderr, "Line: %4d ERROR: %s.\n", get_linenum(), mes);
     return ERROR;
@@ -52,85 +54,6 @@ int empty_stmt_flag = 0;
 
 // 繰り返し文のフラッグ
 int while_flag = 0;
-
-// ###文法###
-// プログラム (program) ::= "program" "名前" ";" ブロック "."
-// ブロック (block) ::= { 変数宣言部 | 副プログラム宣言 } 複合文
-// 変数宣言部 (variable declaration) ::="var" 変数名の並び ":" 型 ";" { 変数名の並び ":" 型 ";" }
-// 変数名の並び (variable names) ::= 変数名 { "," 変数名 }
-// 変数名 (variable name) ::= "名前"
-// 型 (type) ::= 標準型 | 配列型
-// 標準型 (standard type) ::= "integer" | "boolean" | "char"
-// 配列型 (array type) ::= "array" "[" "符号なし整数" "]" "of" 標準型
-// 副プログラム宣言 (subprogram declaration) ::="procedure" 手続き名 [ 仮引数部 ] ";" [ 変数宣言部 ] 複合文 ";"
-// 手続き名 (procedure name) ::= "名前"
-// 仮引数部 (formal parameters) ::="(" 変数名の並び ":" 型 { ";" 変数名の並び ":" 型 } ")"
-// 複合文 (compound statement) ::= "begin" 文 { ";" 文 } "end"
-// 文 (statement) ::= 代入文 | 分岐文 | 繰り返し文 | 脱出文 | 手続き呼び出し文 | 戻り文 | 入力文 | 出力文 | 複合文 | 空文
-// 分岐文 (condition statement) ::= "if" 式 "then" 文 [ "else" 文 ]
-// # どの"if"に対応するか曖昧な"else"は候補の内で最も近い"if"に対応するとする．
-// 繰り返し文 (iteration statement) ::= "while" 式 "do" 文
-// 脱出文 (exit statement) ::= "break"
-// # この脱出文は少なくとも一つの繰り返し文に含まれていなくてはならない
-// 手続き呼び出し文 (call statement) ::= "call" 手続き名 [ "(" 式の並び ")" ]
-// 式の並び (expressions) ::= 式 { "," 式 }
-// 戻り文 (return statement) ::= "return"
-// 代入文 (assignment statement) ::= 左辺部 ":=" 式
-// 左辺部 (left part) ::= 変数
-// 変数 (variable) ::= 変数名 [ "[" 式 "]" ]
-// 式 (expression) ::= 単純式 { 関係演算子 単純式 }
-// # 関係演算子は左に結合的である．
-// 単純式 (simple expression) ::= [ "+" | "-" ] 項 { 加法演算子 項 }
-// # 加法演算子は左に結合的である．
-// 項 (term) ::= 因子 { 乗法演算子 因子 }
-// # 乗法演算子は左に結合的である．
-// 因子 (factor) ::= 変数 | 定数 | "(" 式 ")" | "not" 因子 | 標準型 "(" 式 ")"
-// 定数 (constant) ::= "符号なし整数" | "false" | "true" | "文字列"
-// 乗法演算子 (multiplicative operator) ::= "*" | "div" | "and"
-// 加法演算子 (additive operator) ::= "+" | "-" | "or"
-// 関係演算子 (relational operator) ::= "=" | "<>" | "<" | "<=" | ">" | ">="
-// 入力文 (input statement) ::= ("read" | "readln") [ "(" 変数 { "," 変数 } ")" ]
-// 出力文 (output statement) ::=("write" | "writeln") [ "(" 出力指定 { "," 出力指定 } ")" ]
-// 出力指定 (output format) ::= 式 [ ":" "符号なし整数" ] | "文字列"
-// # この"文字列"の長さ (文字数)は 1以外である．
-// # 長さが 1の場合は式から生成される定数の一つである"文字列"とする．
-// 空文 (empty statement) ::= ε
-
-
-// プリティプリント
-// プログラムのプリティプリントとは，見やすく段付けして印刷されたプログラムリスト
-// である．プログラムの見やすさには主観的な要素が多く，どのようなリストがもっとも見
-// やすいかは一概に言えないが，本課題においては，次の条件を満たすものとする．
-// • 段付の 1 段は空白 4 文字とする．
-// • 行頭を除いて複数の空白は連続しない．行頭を除いてタブは現れない．行末には空
-// 白やタブは現れない．すなわち，特に指定されていない限り，行中の字句と字句の
-// 間は 1 つの空白だけがある．
-// • 前項の指示に関わらず，";", "."の直前には空白を入れない．
-// • 字句";"の次は必ず改行される．ただし，仮引数中の";"については改行しない．
-// • 最初の字句"program"は段付けされない．つまり，1 カラム目 (行頭) から表示さ
-// れる．
-// • 変数宣言部"var"は行頭から 1 段段付けされる．また，変数の並びは改行し，"var"
-// からさらに 1 段段付けする．
-// • 副プログラム宣言 (キーワード)"procedure"で始まる行は行頭から 1 段段付けさ
-// れる．
-// • 副プログラム宣言内の一番外側の"begin", "end"は行頭から 1 段段付けされる．
-// • 対応する"begin", "end"が段付けされるときは同じ量だけ段付けされる．直前の
-// 字句に引き続いて”end”を印刷すると，対応する"begin"より段付け量が多くなる
-// ときは改行して同じにする．
-// • 対応する"begin", "end"の間の文は，その"begin", "end"より少なくとも 1 段多
-// く段付けされる．
-// • 分岐文の"else"の前では必ず改行し，その段付けの量は対応する"if"と同じで
-// ある．
-// • 分岐文，繰り返し文中の文が複合文でなく，"then", "else", "do"の次で改行する
-// ときは，その改行後の文は"if", "while"よりも 1 段多く段付けされる．
-// • 分岐文，繰り返し文中の文が複合文のときは，その先頭の"begin"の前で改行し，
-// 段付けする．
-// • 以上に指定のない点については，見やすさに基づいて字句を配置すること．
-// • 注釈は削除する．その結果，構文解析結果が変わるときには空白を一つ入れる．
-// 直感的には，プリティプリントとは，注釈及び無駄な空白やタブがなく (字句と字句の
-// 間には一つ空白があってよい)，副プログラム宣言部や複合文，ブロック内部はそのすぐ
-// 外よりも一段段付けがされているようなプログラムリストである．
-
 
 // すべての関数をあらかじめ宣言しておく
 int parse_program();
@@ -168,7 +91,7 @@ int parse_output_stmt();
 int parse_output_format();
 int parse_empty_stmt();
 
-// OK
+// プログラムの構文解析関数
 int parse_program() {
     if (token != TPROGRAM) return (error("Keyword 'program' is not found"));
     token = scan(); printf("program");
@@ -182,7 +105,7 @@ int parse_program() {
     return(NORMAL);
 }
 
-// OK
+// ブロックの構文解析関数
 int parse_block() {
     while (token == TVAR || token == TPROCEDURE) {
         if (token == TVAR) {
@@ -195,7 +118,7 @@ int parse_block() {
     return (NORMAL);
 }
 
-// OK
+// 変数宣言部の構文解析関数
 int parse_var_decl() {
     if (token != TVAR) return (error("Keyword 'var' is not found"));
     token = scan();
@@ -221,7 +144,7 @@ int parse_var_decl() {
     return (NORMAL);
 }
 
-// OK
+// 変数名の並びの構文解析関数
 int parse_var_names() {
     if (parse_var_name() == ERROR) return (ERROR);
     while (token == TCOMMA) {
@@ -231,14 +154,14 @@ int parse_var_names() {
     return (NORMAL);
 }
 
-// OK
+// 変数名の構文解析関数
 int parse_var_name() {
     if (token != TNAME) return (error("Variable name is not found"));
     token = scan(); printf("%s", string_attr);
     return (NORMAL);
 }
 
-// OK
+// 型の構文解析関数
 int parse_type() {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
         if (parse_standard_type() == ERROR) return (ERROR);
@@ -250,7 +173,7 @@ int parse_type() {
     return (NORMAL);
 }
 
-// OK
+// 標準型の構文解析関数
 int parse_standard_type() {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
         printf("%s", tokenstr[token]);
@@ -261,7 +184,7 @@ int parse_standard_type() {
     }
 }
 
-// OK
+// 配列型の構文解析関数
 int parse_array_type() {
     if (token != TARRAY) return (error("Keyword 'array' is not found"));
     token = scan(); printf("array");
@@ -277,6 +200,7 @@ int parse_array_type() {
     return (NORMAL);
 }
 
+// 部分プログラム宣言部の構文解析関数
 int parse_subpro_decl() {
     indent_print(1);
     if (token != TPROCEDURE) return (error("Keyword 'procedure' is not found"));
@@ -289,7 +213,7 @@ int parse_subpro_decl() {
     token = scan(); printf(";\n");
     if (token == TVAR) {
         if (parse_var_decl() == ERROR) return (ERROR);
-    } //ここまでOK
+    } 
     indent = 1;
     if (parse_comp_stmt() == ERROR) return (ERROR);
     if (token != TSEMI) return (error("Semicolon is not found"));
@@ -298,14 +222,14 @@ int parse_subpro_decl() {
     return (NORMAL);
 }
 
-// OK
+// 手続き名の構文解析関数
 int parse_procedure_name() {
     if (token != TNAME) return (error("Procedure name is not found"));
     token = scan(); printf("%s", string_attr);
     return (NORMAL);
 }
 
-// OK
+// 仮引数部の構文解析関数
 int parse_formal_params() {
     if (token != TLPAREN) return (error("Left parenthesis is not found"));
     token = scan(); printf(" ( ");
@@ -325,6 +249,7 @@ int parse_formal_params() {
     return (NORMAL);
 }
 
+// 複合文の構文解析関数
 int parse_comp_stmt() {
     if (token != TBEGIN) return (error("Keyword 'begin' is not found"));
     token = scan();
@@ -353,9 +278,8 @@ int parse_comp_stmt() {
     return (NORMAL);
 }
 
-// OK
+// 文の構文解析関数
 int parse_stmt() {
-    // indent_print(indent);
     if (token == TNAME) {
         if (parse_assign_stmt() == ERROR) return (ERROR);
     } else if (token == TIF) {
@@ -382,7 +306,7 @@ int parse_stmt() {
     return (NORMAL);
 }
 
-// OK
+// 条件文の構文解析関数
 int parse_cond_stmt() {
     indent_print(indent);
     if (token != TIF) return (error("Keyword 'if' is not found"));
@@ -396,7 +320,6 @@ int parse_cond_stmt() {
     if (token == TELSE) {
     printf("\n");
         token = scan();
-        // indent--; indent_print(original_indent);
         indent_print(if_indent);
         printf("else\n");
         indent = if_indent+1;
@@ -405,7 +328,7 @@ int parse_cond_stmt() {
     return (NORMAL);
 }
 
-// OK
+// 繰り返し文の構文解析関数
 int parse_iter_stmt() {
     while_flag = 1;
     indent_print(indent);
@@ -421,7 +344,7 @@ int parse_iter_stmt() {
     return (NORMAL);
 }
 
-// OK
+// 脱出文の構文解析関数
 int parse_exit_stmt() {
     indent_print(indent);
     if (token != TBREAK) return (error("Keyword 'break' is not found"));
@@ -433,7 +356,7 @@ int parse_exit_stmt() {
     return (NORMAL);
 }
 
-// OK
+// 手続き呼び出し文の構文解析関数
 int parse_call_stmt() {
     indent_print(indent);
     if (token != TCALL) return (error("Keyword 'call' is not found"));
@@ -443,13 +366,13 @@ int parse_call_stmt() {
         token = scan(); printf(" ( ");
         if (parse_expressions() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
-        token = scan(); printf(" ) ");
+        token = scan(); printf(" )");
     }
     indent--;
     return (NORMAL);
 }
 
-// OK
+// 式の並びの構文解析関数
 int parse_expressions() {
     if (parse_expression() == ERROR) return (ERROR);
     while (token == TCOMMA) {
@@ -459,7 +382,7 @@ int parse_expressions() {
     return (NORMAL);
 }
 
-// OK
+// 戻り文の構文解析関数
 int parse_return_stmt() {
     indent_print(indent);
     if (token != TRETURN) return (error("Keyword 'return' is not found"));
@@ -468,7 +391,7 @@ int parse_return_stmt() {
     return (NORMAL);
 }
 
-// OK
+// 代入文の構文解析関数
 int parse_assign_stmt() {
     indent_print(indent);   
     if (parse_left_part() == ERROR) return (ERROR);
@@ -479,12 +402,13 @@ int parse_assign_stmt() {
     return (NORMAL);
 }
 
-// OK
+// 左辺部の構文解析関数
 int parse_left_part() {
     if (parse_variable() == ERROR) return (ERROR);
     return (NORMAL);
 }
 
+// 変数の構文解析関数
 int parse_variable() {
     if (parse_var_name() == ERROR) return (ERROR);
     if (token == TLSQPAREN) {
@@ -496,7 +420,7 @@ int parse_variable() {
     return (NORMAL);
 }
 
-// OK
+// 式の構文解析関数
 int parse_expression() {
     if (parse_simple_expression() == ERROR) return (ERROR);
     while (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
@@ -508,7 +432,7 @@ int parse_expression() {
     return (NORMAL);
 }
 
-// OK
+// 単純式の構文解析関数
 int parse_simple_expression() {
     if (token == TPLUS || token == TMINUS) {
         printf("%s ", tokenstr[token]);
@@ -524,6 +448,7 @@ int parse_simple_expression() {
     return (NORMAL);
 }
 
+// 項の構文解析関数
 int parse_term() {
     if (parse_factor() == ERROR) return (ERROR);
     while (token == TSTAR || token == TDIV || token == TAND) {
@@ -535,6 +460,7 @@ int parse_term() {
     return (NORMAL);
 }
 
+// 因子の構文解析関数
 int parse_factor() {
     if (token == TNAME) {
         if (parse_variable() == ERROR) return (ERROR);
@@ -562,6 +488,7 @@ int parse_factor() {
     return (NORMAL);
 }
 
+// 定数の構文解析関数
 int parse_constant() {
     if (token == TNUMBER) {
         token = scan(); printf("%d", num_attr);
@@ -577,6 +504,7 @@ int parse_constant() {
     return (NORMAL);
 }
 
+// 乗算演算子の構文解析関数
 int parse_multiplicative_op() {
     if (token == TSTAR || token == TDIV || token == TAND) {
         printf("%s", tokenstr[token]);
@@ -587,6 +515,7 @@ int parse_multiplicative_op() {
     return (NORMAL);
 }
 
+// 加算演算子の構文解析関数
 int parse_additive_op() {
     if (token == TPLUS || token == TMINUS || token == TOR) {
         printf("%s", tokenstr[token]);
@@ -597,6 +526,7 @@ int parse_additive_op() {
     return (NORMAL);
 }
 
+// 関係演算子の構文解析関数
 int parse_relational_op() {
     if (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ) {
         printf("%s", tokenstr[token]);
@@ -607,6 +537,7 @@ int parse_relational_op() {
     return (NORMAL);
 }
 
+// 入力文の構文解析関数
 int parse_input_stmt() {
     indent_print(indent);
     if (token != TREAD && token != TREADLN) return (error("Keyword 'read' or 'readln' is not found"));
@@ -626,6 +557,7 @@ int parse_input_stmt() {
     return (NORMAL);
 }
 
+// 出力文の構文解析関数
 int parse_output_stmt() {
     indent_print(indent);
     if (token != TWRITE && token != TWRITELN) return (error("Keyword 'write' or 'writeln' is not found"));
@@ -645,6 +577,7 @@ int parse_output_stmt() {
     return (NORMAL);
 }
 
+// 出力書式の構文解析関数
 int parse_output_format() {
     if (token == TPLUS || token == TMINUS || token == TNAME || token == TNUMBER || token == TFALSE || token == TTRUE || token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
         if (parse_expression() == ERROR) return (ERROR);
@@ -653,7 +586,7 @@ int parse_output_format() {
             if (token != TNUMBER) return (error("Number is not found"));
             token = scan(); printf("%d", num_attr);
         }
-    } else if (token = TSTRING) {
+    } else if (token == TSTRING) {
         token = scan(); printf("\'%s\'", string_attr);
     } else {
         return (error("Output format is not found"));
@@ -661,28 +594,36 @@ int parse_output_format() {
     return (NORMAL);
 }
 
+// 空文の構文解析関数
 int parse_empty_stmt() {
     empty_stmt_flag = 1;
     return (NORMAL);
 }
 
 
-
+// 実際の処理
 int main(int nc, char *np[]) {
     int tk, i;
-
+    
+    // 引数のチェック
     if (nc < 2) {
         error("File name is not given.");
         return 0;
     }
 
+    // ファイルのオープン
     if (init_scan(np[1]) < 0) {
         error("File can not open.");
         return 0;
     }
 
+    // まず1つめのトークンを読んでおく
     token = scan();
+
+    // 構文解析
     parse_program();
+
+    // ファイルのクローズ
     end_scan();
 
     return 0;
