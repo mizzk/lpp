@@ -94,14 +94,14 @@ int parse_empty_stmt();
 // プログラムの構文解析関数
 int parse_program() {
     if (token != TPROGRAM) return (error("Keyword 'program' is not found"));
-    token = scan(); printf("program");
+    token = scan(); // printf("program");
     if (token != TNAME) return (error("Program name is not found"));
-    token = scan(); printf(" %s", string_attr);
+    token = scan(); // printf(" %s", string_attr);
     if (token != TSEMI) return (error("Semicolon is not found"));
-    token = scan(); printf(";\n");
+    token = scan(); // printf(";\n");
     if (parse_block() == ERROR) return (ERROR);
     if (token != TDOT) return(error("Period is not found at the end of program"));
-    token = scan(); printf(".\n");
+    token = scan(); // printf(".\n");
     return(NORMAL);
 }
 
