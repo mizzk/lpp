@@ -8,6 +8,17 @@
 
 #define MAXSTRSIZE 1024
 
+/* Type */
+#define TPINT		1	/* integer type */
+#define TPCHAR		2	/* char type */
+#define TPBOOL		3	/* boolean type */
+#define TPARRAYINT	4	/* array of integer type */
+#define TPARRAYCHAR	5	/* array of char type */
+#define TPARRAYBOOL	6	/* array of boolean type */
+#define TPPROC		7	/* procedure type */
+
+#define NUMOFTYPE	7
+
 /* Token */
 #define	TNAME		1	/* Name : Alphabet { Alphabet | Digit } */
 #define	TPROGRAM	2	/* program : Keyword */
