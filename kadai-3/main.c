@@ -1,9 +1,14 @@
 #include "token-list.h"
 
-char *typestr[NUMOFTYPE + 1] = {
-    "", "integer", "char", "boolean", "array of integer", "array of char",
-    "array of boolean", "procedure"};
-
+// 型の文字列
+char *typestr[NUMOFTYPE + 1] = {"",
+                                "integer",
+                                "char",
+                                "boolean",
+                                "array of integer",
+                                "array of char",
+                                "array of boolean",
+                                "procedure"};
 
 // 変数宣言部のフラッグ(0: 変数宣言部でない, 1: 変数宣言部である)
 int var_decl_flag = 0;
@@ -11,8 +16,18 @@ int var_decl_flag = 0;
 // 仮引数部のフラッグ(0: 仮引数部でない, 1: 仮引数部である)
 int formal_params_flag = 0;
 
-// 副プログラム宣言内であればその名前を格納する変数，副プログラム宣言内でなければNULL
+// 副プログラム宣言でその名前を格納する変数
 char subpro_name[MAXSTRSIZE] = "";
+
+// 副プログラム宣言部のフラッグ(0: 副プログラム宣言部でない, 1:副プログラム宣言部である)
+int subpro_decl_flag = 0;
+
+// 手続き呼び出し文のフラッグ(0: 手続き呼び出し文でない, 1:手続き呼び出し文である)
+int call_stmt_flag = 0;
+
+// 配列型のフラッグ(0: 配列型でない, 1: 配列型である)
+int array_flag = 0;
+
 
 // 記号表のための構造体の定義
 
@@ -41,7 +56,8 @@ struct ID {
     int deflinenum;     /* 定義行 */
     struct LINE *irefp; /* 参照行のリスト */
     struct ID *nextp;
-} *globalidroot, *localidroot; /* Pointers to root of global & local symboltables */
+} *globalidroot,
+    *localidroot; /* Pointers to root of global & local symboltables */
 
 // 大域変数表の初期化
 void init_globalidtab() { /* Initialise the table */
@@ -81,7 +97,8 @@ int set_globalidtab(char *np, struct TYPE *tp, int ispara, int deflinenum) {
     if ((p = search_globalidtab(np)) != NULL) {
         // すでに登録されている
         char error_message[MAXSTRSIZE];
-        sprintf(error_message, "Variable %s is already defined in line %d", np, p->deflinenum);
+        sprintf(error_message, "Variable %s is already defined in line %d", np,
+                p->deflinenum);
         return (error(error_message));
     } else {
         // 未登録
@@ -97,7 +114,7 @@ int set_globalidtab(char *np, struct TYPE *tp, int ispara, int deflinenum) {
         p->ispara = ispara;
         p->deflinenum = deflinenum;
         p->irefp = NULL;
-        
+
         // リストの末尾に追加する．もしリストが空ならば先頭に追加する
         struct ID *q;
         for (q = globalidroot; q != NULL; q = q->nextp) {
@@ -119,12 +136,13 @@ int set_localidtab(char *np, struct TYPE *tp, int ispara, int deflinenum) {
     char *cp;
 
     if ((p = search_localidtab(np)) != NULL) {
-        // すでに登録されている
+        // すでに登録されている場合
         char error_message[MAXSTRSIZE];
-        sprintf(error_message, "Variable %s is already defined in line %d", np, p->deflinenum);
+        sprintf(error_message, "Variable %s is already defined2 in line %d", np,
+                p->deflinenum);
         return (error(error_message));
     } else {
-        // 未登録
+        // 未登録の場合
         if ((p = (struct ID *)malloc(sizeof(struct ID))) == NULL) {
             return (error("can not malloc in set_localidtab"));
         }
@@ -137,7 +155,7 @@ int set_localidtab(char *np, struct TYPE *tp, int ispara, int deflinenum) {
         p->ispara = ispara;
         p->deflinenum = deflinenum;
         p->irefp = NULL;
-        
+
         // リストの末尾に追加する．もしリストが空ならば先頭に追加する
         struct ID *q;
         for (q = localidroot; q != NULL; q = q->nextp) {
@@ -156,9 +174,54 @@ int set_localidtab(char *np, struct TYPE *tp, int ispara, int deflinenum) {
 // 大域記号表の出力
 void print_globalidtab() {
     struct ID *p;
-
     for (p = globalidroot; p != NULL; p = p->nextp) {
-        printf(">>>>>>>>>>>%s\t|%s\t|%d\n", p->name, typestr[p->itp->ttype], p->deflinenum);
+        // 参照行をカンマ区切りでtmprefstringに格納
+        char tmprefstring[MAXSTRSIZE] = "";
+        struct LINE *r;
+        for (r = p->irefp; r != NULL; r = r->nextlinep) {
+            if (r->nextlinep == NULL) {
+                char tmpstring[MAXSTRSIZE];
+                sprintf(tmpstring, "%d", r->reflinenum);
+                strcat(tmprefstring, tmpstring);
+            } else {
+                char tmpstring[MAXSTRSIZE];
+                sprintf(tmpstring, "%d,", r->reflinenum);
+                strcat(tmprefstring, tmpstring);
+            }
+        }
+
+        if (p->itp->ttype == TPPROC) {
+            char paratpstr[MAXSTRSIZE] = "";
+            if (p->itp->paratp != NULL) {
+                strcat(paratpstr, "(");
+                struct TYPE *q;
+                for (q = p->itp->paratp; q != NULL; q = q->paratp) {
+                    if (q->paratp == NULL) {
+                        strcat(paratpstr, typestr[q->ttype]);
+                    } else {
+                        char tmpstring[MAXSTRSIZE];
+                        sprintf(tmpstring, "%s,", typestr[q->ttype]);
+                        strcat(paratpstr, tmpstring);
+                    }
+                }
+                strcat(paratpstr, ")");
+            }
+            char tmpstring[MAXSTRSIZE] = "procedure";
+            strcat(tmpstring, paratpstr);
+            printf("%-15s|%-30s|%-15d|%-10s\n", p->name, tmpstring,
+                   p->deflinenum, tmprefstring);
+        } else if (p->itp->ttype == TPARRAYINT ||
+                   p->itp->ttype == TPARRAYCHAR ||
+                   p->itp->ttype == TPARRAYBOOL) {
+            char tmpstring[MAXSTRSIZE];
+            sprintf(tmpstring, "array[%d] of %s", p->itp->arraysize,
+                    typestr[p->itp->etp->ttype]);
+            printf("%-15s|%-30s|%-15d|%-10s\n", p->name, tmpstring,
+                   p->deflinenum, tmprefstring);
+        } else {
+            printf("%-15s|%-30s|%-15d|%-10s\n", p->name, typestr[p->itp->ttype],
+                   p->deflinenum, tmprefstring);
+        }
     }
 }
 
@@ -167,10 +230,26 @@ void print_localidtab() {
     struct ID *p;
 
     for (p = localidroot; p != NULL; p = p->nextp) {
-        if(p->itp == NULL) {
-            printf(">>>>>>>>>>>%s\t|NULL\t|%d\n", p->name, p->deflinenum);
+        // 参照行をカンマ区切りでtmprefstringに格納
+        char tmprefstring[MAXSTRSIZE] = "";
+        struct LINE *r;
+        for (r = p->irefp; r != NULL; r = r->nextlinep) {
+            if (r->nextlinep == NULL) {
+                char tmpstring[MAXSTRSIZE];
+                sprintf(tmpstring, "%d", r->reflinenum);
+                strcat(tmprefstring, tmpstring);
+            } else {
+                char tmpstring[MAXSTRSIZE];
+                sprintf(tmpstring, "%d,", r->reflinenum);
+                strcat(tmprefstring, tmpstring);
+            }
+        }
+        if (p->itp == NULL) {
+            printf("%-15s|NULL                          |%-15d|%-10s\n",
+                   p->name, p->deflinenum, tmprefstring);
         } else {
-            printf(">>>>>>>>>>>%s\t|%s\t|%d\n", p->name, typestr[p->itp->ttype], p->deflinenum);
+            printf("%-15s|%-30s|%-15d|%-10s\n", p->name, typestr[p->itp->ttype],
+                   p->deflinenum, tmprefstring);
         }
     }
 }
@@ -217,7 +296,7 @@ int indent = 0;
 // 段付けをする関数
 void indent_print(int ind) {
     for (int i = 0; i < ind; i++) {
-        printf("    ");
+        // printf("    ");
     }
 }
 
@@ -270,18 +349,18 @@ int parse_empty_stmt();
 int parse_program() {
     if (token != TPROGRAM) return (error("Keyword 'program' is not found"));
     token = scan();
-    printf("program");
+    // printf("program");
     if (token != TNAME) return (error("Program name is not found"));
     token = scan();
-    printf(" %s", string_attr);
+    // printf(" %s", string_attr);
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    printf(";\n");
+    // printf(";\n");
     if (parse_block() == ERROR) return (ERROR);
     if (token != TDOT)
         return (error("Period is not found at the end of program"));
     token = scan();
-    printf(".\n");
+    // printf(".\n");
     return (NORMAL);
 }
 
@@ -300,32 +379,31 @@ int parse_block() {
 
 // 変数宣言部の構文解析関数
 int parse_var_decl() {
-
     var_decl_flag = 1;
 
     if (token != TVAR) return (error("Keyword 'var' is not found"));
     token = scan();
     indent_print(1);
-    printf("var\n");
+    // printf("var\n");
     indent_print(2);
     if (parse_var_names() == ERROR) return (ERROR);
     if (token != TCOLON) return (error("Colon is not found"));
     token = scan();
-    printf(" : ");
+    // printf(" : ");
     if (parse_type() == ERROR) return (ERROR);
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    printf(";\n");
+    // printf(";\n");
     while (token == TNAME) {
         indent_print(2);
         if (parse_var_names() == ERROR) return (ERROR);
         if (token != TCOLON) return (error("Colon is not found"));
         token = scan();
-        printf(" : ");
+        // printf(" : ");
         if (parse_type() == ERROR) return (ERROR);
         if (token != TSEMI) return (error("Semicolon is not found"));
         token = scan();
-        printf(";\n");
+        // printf(";\n");
     }
     indent = 0;
 
@@ -338,7 +416,7 @@ int parse_var_names() {
     if (parse_var_name() == ERROR) return (ERROR);
     while (token == TCOMMA) {
         token = scan();
-        printf(" , ");
+        // printf(" , ");
         if (parse_var_name() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -347,21 +425,62 @@ int parse_var_names() {
 // 変数名の構文解析関数
 int parse_var_name() {
     if (token != TNAME) return (error("Variable name is not found"));
-    token = scan();
-    printf("%s", string_attr);
-    if (var_decl_flag == 1) { //変数宣言部である場合
+    if (var_decl_flag == 1) {  // 変数宣言部である場合
         if (strcmp(subpro_name, "") == 0) {
-            if (set_globalidtab(string_attr, NULL, 0, get_linenum()) == ERROR) return (ERROR);
+            if (set_globalidtab(string_attr, NULL, 0, get_linenum()) == ERROR)
+                return (ERROR);
         } else {
             char tmpstring[MAXSTRSIZE];
             sprintf(tmpstring, "%s:%s", string_attr, subpro_name);
-            if (set_localidtab(tmpstring, NULL, 0, get_linenum()) == ERROR) return (ERROR);
+            if (set_localidtab(tmpstring, NULL, 0, get_linenum()) == ERROR)
+                return (ERROR);
         }
-    } else if (formal_params_flag == 1) { //仮引数部である場合
+    } else if (formal_params_flag == 1) {  // 仮引数部である場合
         char tmpstring[MAXSTRSIZE];
         sprintf(tmpstring, "%s:%s", string_attr, subpro_name);
-        if (set_localidtab(tmpstring, NULL, 1, get_linenum()) == ERROR) return (ERROR);
+        if (set_localidtab(tmpstring, NULL, 1, get_linenum()) == ERROR)
+            return (ERROR);
+    } else {
+        // それ以外の場所で参照されている場合
+
+        struct ID *p;
+        char tmpstring[MAXSTRSIZE];
+
+        // 大域部分で参照されている場合は，大域変数表だけを検索
+        if (strcmp(subpro_name, "") == 0) {
+            if ((p = search_globalidtab(string_attr)) == NULL) {
+                return (error("Variable is not defined1"));
+            }
+
+            // 副プログラム宣言内で参照されている場合は，副プログラム宣言内の変数表を検索し，無ければ大域変数表を検索
+        } else {
+            sprintf(tmpstring, "%s:%s", string_attr, subpro_name);
+            if ((p = search_localidtab(tmpstring)) == NULL) {
+                if ((p = search_globalidtab(string_attr)) == NULL) {
+                    return (error("Variable is not defined2"));
+                }
+            }
+        }
+        // 参照行番号を記録するための構造体を確保
+        struct LINE *q;
+        if ((q = (struct LINE *)malloc(sizeof(struct LINE))) == NULL) {
+            return (error("can not malloc in parse_var_name"));
+        }
+        q->reflinenum = get_linenum();
+        q->nextlinep = NULL;
+
+        struct LINE *r;
+        for (r = p->irefp; r != NULL; r = r->nextlinep) {
+            if (r->nextlinep == NULL) {
+                r->nextlinep = q;
+                break;
+            }
+        }
+        if (r == NULL) {
+            p->irefp = q;
+        }
     }
+    token = scan();
     return (NORMAL);
 }
 
@@ -380,9 +499,10 @@ int parse_type() {
 // 標準型の構文解析関数
 int parse_standard_type() {
     if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
-        printf("%s", tokenstr[token]);
 
-        if (var_decl_flag == 1) {
+        if (array_flag == 1) {
+            // ここでは何もしない
+        } else if (var_decl_flag == 1) {
             struct TYPE *tp;
             if ((tp = (struct TYPE *)malloc(sizeof(struct TYPE))) == NULL) {
                 return (error("can not malloc in parse_standard_type"));
@@ -403,14 +523,15 @@ int parse_standard_type() {
             tp->paratp = NULL;
 
             // 変数表を検索して，itpがNULLの要素に型を登録する
-            if (strcmp(subpro_name, "") == 0) { // 副プログラムじゃなければ大域変数表を検索
+            if (strcmp(subpro_name, "") ==
+                0) {  // 副プログラムじゃなければ大域変数表を検索
                 struct ID *p;
                 for (p = globalidroot; p != NULL; p = p->nextp) {
                     if (p->itp == NULL) {
                         p->itp = tp;
                     }
                 }
-            } else { // 副プログラム宣言内の変数表を検索
+            } else {  // 副プログラム宣言内の変数表を検索
                 struct ID *p;
                 for (p = localidroot; p != NULL; p = p->nextp) {
                     if (p->itp == NULL) {
@@ -438,16 +559,52 @@ int parse_standard_type() {
             tp->etp = NULL;
             tp->paratp = NULL;
 
-            // 大域変数表を検索して，itpがNULLの要素に型を登録する
+            // ローカル変数表を検索して，itpがNULLの要素に型を登録する
             struct ID *p;
+
+            // 副プログラム宣言内の仮引数の個数を数える変数
+            int formal_params_count = 0;
+
             for (p = localidroot; p != NULL; p = p->nextp) {
                 if (p->itp == NULL) {
                     p->itp = tp;
+                    formal_params_count++;
+                }
+            }
+
+            // globalidtabで，itpがTPPROCで，nameがsubpro_nameのものを検索
+            p = search_globalidtab(subpro_name);
+
+            if (formal_params_count == 1) {
+                p->itp->paratp = tp;
+            } else if (formal_params_count > 1) {
+                for (int i = 0; i < formal_params_count; i++) {
+                    struct TYPE *q;
+                    if ((q = (struct TYPE *)malloc(sizeof(struct TYPE))) ==
+                        NULL) {
+                        return (error("can not malloc in parse_standard_type"));
+                    }
+                    q->ttype = tp->ttype;
+                    q->arraysize = tp->arraysize;
+                    q->etp = tp->etp;
+                    q->paratp = NULL;
+
+                    if (i == 0) {
+                        p->itp->paratp = q;
+                    } else {
+                        struct TYPE *r;
+                        for (r = p->itp->paratp; r != NULL; r = r->paratp) {
+                            if (r->paratp == NULL) {
+                                r->paratp = q;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
-
         token = scan();
+        int normal = 0;  // Declare the identifier normal
         return (NORMAL);
     } else {
         return (error("Standard type is not found"));
@@ -455,41 +612,96 @@ int parse_standard_type() {
 }
 
 // 配列型の構文解析関数
-//TODO: 配列型も標準型と同じように記号表に登録する処理を追加する
 int parse_array_type() {
+    array_flag = 1;
+
+    struct TYPE *tp;
+    if ((tp = (struct TYPE *)malloc(sizeof(struct TYPE))) == NULL) {
+        return (error("can not malloc in parse_array_type"));
+    }
+
     if (token != TARRAY) return (error("Keyword 'array' is not found"));
     token = scan();
-    printf("array");
+    // printf("array");
     if (token != TLSQPAREN)
         return (error("Left square parenthesis is not found"));
     token = scan();
-    printf(" [ ");
+    // printf(" [ ");
     if (token != TNUMBER) return (error("Number is not found"));
     token = scan();
-    printf("%d", num_attr);
+
+    // 配列型のサイズを記録
+    tp->arraysize = num_attr;
+
+    // printf("%d", num_attr);
     if (token != TRSQPAREN)
         return (error("Right square parenthesis is not found"));
     token = scan();
-    printf(" ] ");
+    // printf(" ] ");
     if (token != TOF) return (error("Keyword 'of' is not found"));
     token = scan();
-    printf("of ");
+    // printf("of ");
+
+    // 配列型の要素の型を記録
+    struct TYPE *etp;
+    if ((etp = (struct TYPE *)malloc(sizeof(struct TYPE))) == NULL) {
+        return (error("can not malloc in parse_array_type"));
+    }
+    switch (token) {
+        case TINTEGER:
+            tp->ttype = TPARRAYINT;
+            etp->ttype = TPINT;
+            break;
+        case TBOOLEAN:
+            tp->ttype = TPARRAYBOOL;
+            etp->ttype = TPBOOL;
+            break;
+        case TCHAR:
+            tp->ttype = TPARRAYCHAR;
+            etp->ttype = TPCHAR;
+            break;
+    }
+
+    etp->arraysize = 0;
+    etp->etp = NULL;
+    etp->paratp = NULL;
+
+    tp->etp = etp;
+    tp->paratp = NULL;
+
+    // 変数表を検索して，itpがNULLの要素に型を登録する
+    if (strcmp(subpro_name, "") == 0) {
+        struct ID *p;
+        for (p = globalidroot; p != NULL; p = p->nextp) {
+            if (p->itp == NULL) {
+                p->itp = tp;
+            }
+        }
+    } else {
+        struct ID *p;
+        for (p = localidroot; p != NULL; p = p->nextp) {
+            if (p->itp == NULL) {
+                p->itp = tp;
+            }
+        }
+    }
+
     if (parse_standard_type() == ERROR) return (ERROR);
+
+    array_flag = 0;
     return (NORMAL);
 }
 
 // 部分プログラム宣言部の構文解析関数
-//TODO: 手続き名も変数表に登録する処理を追加する
+
 int parse_subpro_decl() {
+    subpro_decl_flag = 1;
 
     indent_print(1);
     if (token != TPROCEDURE) return (error("Keyword 'procedure' is not found"));
     token = scan();
-    printf("procedure ");
+    // printf("procedure ");
     if (parse_procedure_name() == ERROR) return (ERROR);
-
-    // 副プログラム宣言内であることを示す
-    strcpy(subpro_name, string_attr);
 
     if (token == TLPAREN) {
         if (parse_formal_params() == ERROR) return (ERROR);
@@ -513,15 +725,18 @@ int parse_subpro_decl() {
     }
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    printf(";\n");
+    // printf(";\n");
     if (token == TVAR) {
         if (parse_var_decl() == ERROR) return (ERROR);
     }
+    // 副プログラム宣言内でないことを示す
+    subpro_decl_flag = 0;
+
     indent = 1;
     if (parse_comp_stmt() == ERROR) return (ERROR);
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    printf(";\n");
+    // printf(";\n");
     indent = 0;
 
     // 副プログラム宣言内の記号表を出力
@@ -530,7 +745,6 @@ int parse_subpro_decl() {
     // 副プログラム宣言内の記号表を初期化
     init_localidtab();
 
-    // 副プログラム宣言内でないことを示す
     strcpy(subpro_name, "");
     return (NORMAL);
 }
@@ -538,38 +752,81 @@ int parse_subpro_decl() {
 // 手続き名の構文解析関数
 int parse_procedure_name() {
     if (token != TNAME) return (error("Procedure name is not found"));
-    token = scan();
-    printf("%s", string_attr);
-    if (strcmp(subpro_name, "") != 0) {
-        if (set_globalidtab(string_attr, NULL, 0, get_linenum()) == ERROR) return (ERROR);
+    char tmpstring[MAXSTRSIZE];
+
+    if (subpro_decl_flag == 1) {
+        strcpy(subpro_name, string_attr);
     }
+
+    strcpy(tmpstring, string_attr);
+
+    if (strcmp(tmpstring, "") != 0 && subpro_decl_flag == 1 &&
+        call_stmt_flag == 0) {
+        struct TYPE *tp;
+        if ((tp = (struct TYPE *)malloc(sizeof(struct TYPE))) == NULL) {
+            return (error("can not malloc in parse_procedure_name"));
+        }
+        tp->ttype = TPPROC;
+        tp->arraysize = 0;
+        tp->etp = NULL;
+        tp->paratp = NULL;
+
+        if (set_globalidtab(string_attr, tp, 0, get_linenum()) == ERROR)
+            return (ERROR);
+    } else if (strcmp(tmpstring, "") != 0 && call_stmt_flag == 1) {
+        // 手続き名がcall文で呼び出された場合は，手続き名で参照されたことを記録する
+        struct ID *p;
+        if ((p = search_globalidtab(tmpstring)) == NULL) {
+            return (error("Procedure name is not defined"));
+        }
+
+        // 参照行番号を記録するための構造体を確保
+        struct LINE *q;
+        if ((q = (struct LINE *)malloc(sizeof(struct LINE))) == NULL) {
+            return (error("can not malloc in parse_procedure_name"));
+        }
+        q->reflinenum = get_linenum();
+        q->nextlinep = NULL;
+
+        // 参照を記録する
+        struct LINE *r;
+        for (r = p->irefp; r != NULL; r = r->nextlinep) {
+            if (r->nextlinep == NULL) {
+                r->nextlinep = q;
+                break;
+            }
+        }
+        if (r == NULL) {
+            p->irefp = q;
+        }
+    }
+    token = scan();
     return (NORMAL);
 }
 
 // 仮引数部の構文解析関数
 int parse_formal_params() {
-
     formal_params_flag = 1;
     if (token != TLPAREN) return (error("Left parenthesis is not found"));
     token = scan();
-    printf(" ( ");
+    // printf(" ( ");
     if (parse_var_names() == ERROR) return (ERROR);
     if (token != TCOLON) return (error("Colon is not found"));
     token = scan();
-    printf(" : ");
+    // printf(" : ");
     if (parse_type() == ERROR) return (ERROR);
     while (token == TSEMI) {
         token = scan();
-        printf("; ");
+        // printf("; ");
         if (parse_var_names() == ERROR) return (ERROR);
         if (token != TCOLON) return (error("Colon is not found"));
         token = scan();
-        printf(" : ");
+        // printf(" : ");
         if (parse_type() == ERROR) return (ERROR);
     }
     if (token != TRPAREN) return (error("Right parenthesis is not found"));
     token = scan();
-    printf(" )");
+    // printf(" )");
     formal_params_flag = 0;
     return (NORMAL);
 }
@@ -580,7 +837,7 @@ int parse_comp_stmt() {
     token = scan();
     int original_indent = indent;
     indent_print(indent);
-    printf("begin\n");
+    // printf("begin\n");
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
     while (token == TSEMI) {
@@ -589,7 +846,7 @@ int parse_comp_stmt() {
             empty_stmt_flag = 0;
         }
         token = scan();
-        printf(";\n");
+        // printf(";\n");
         indent = original_indent + 1;
         if (parse_stmt() == ERROR) return (ERROR);
     }
@@ -597,11 +854,11 @@ int parse_comp_stmt() {
     if (empty_stmt_flag == 1) {
         empty_stmt_flag = 0;
     } else {
-        printf("\n");
+        // printf("\n");
     }
     indent_print(original_indent);
     token = scan();
-    printf("end");
+    // printf("end");
     return (NORMAL);
 }
 
@@ -638,19 +895,19 @@ int parse_cond_stmt() {
     indent_print(indent);
     if (token != TIF) return (error("Keyword 'if' is not found"));
     token = scan();
-    printf("if ");
+    // printf("if ");
     if_indent = indent;
     if (parse_expression() == ERROR) return (ERROR);
     if (token != TTHEN) return (error("Keyword 'then' is not found"));
     token = scan();
-    printf(" then\n");
+    // printf(" then\n");
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
     if (token == TELSE) {
-        printf("\n");
+        // printf("\n");
         token = scan();
         indent_print(if_indent);
-        printf("else\n");
+        // printf("else\n");
         indent = if_indent + 1;
         if (parse_stmt() == ERROR) return (ERROR);
     }
@@ -663,11 +920,11 @@ int parse_iter_stmt() {
     indent_print(indent);
     if (token != TWHILE) return (error("Keyword 'while' is not found"));
     token = scan();
-    printf("while ");
+    // printf("while ");
     if (parse_expression() == ERROR) return (ERROR);
     if (token != TDO) return (error("Keyword 'do' is not found"));
     token = scan();
-    printf(" do\n");
+    // printf(" do\n");
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
     indent--;
@@ -681,7 +938,7 @@ int parse_exit_stmt() {
     indent_print(indent);
     if (token != TBREAK) return (error("Keyword 'break' is not found"));
     token = scan();
-    printf("break");
+    // printf("break");
     // indent--;
     if (while_flag == 0) {
         return (error("Break statement is not in while statement"));
@@ -691,20 +948,21 @@ int parse_exit_stmt() {
 
 // 手続き呼び出し文の構文解析関数
 int parse_call_stmt() {
+    call_stmt_flag = 1;
     indent_print(indent);
     if (token != TCALL) return (error("Keyword 'call' is not found"));
     token = scan();
-    printf("call ");
     if (parse_procedure_name() == ERROR) return (ERROR);
     if (token == TLPAREN) {
         token = scan();
-        printf(" ( ");
+        // printf(" ( ");
         if (parse_expressions() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        printf(" )");
+        // printf(" )");
     }
     indent--;
+    call_stmt_flag = 0;
     return (NORMAL);
 }
 
@@ -713,7 +971,7 @@ int parse_expressions() {
     if (parse_expression() == ERROR) return (ERROR);
     while (token == TCOMMA) {
         token = scan();
-        printf(" , ");
+        // printf(" , ");
         if (parse_expression() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -724,7 +982,7 @@ int parse_return_stmt() {
     indent_print(indent);
     if (token != TRETURN) return (error("Keyword 'return' is not found"));
     token = scan();
-    printf("return");
+    // printf("return");
     indent--;
     return (NORMAL);
 }
@@ -735,7 +993,7 @@ int parse_assign_stmt() {
     if (parse_left_part() == ERROR) return (ERROR);
     if (token != TASSIGN) return (error("Assignment operator is not found"));
     token = scan();
-    printf(" := ");
+    // printf(" := ");
     if (parse_expression() == ERROR) return (ERROR);
     indent--;
     return (NORMAL);
@@ -752,12 +1010,12 @@ int parse_variable() {
     if (parse_var_name() == ERROR) return (ERROR);
     if (token == TLSQPAREN) {
         token = scan();
-        printf(" [ ");
+        // printf(" [ ");
         if (parse_expression() == ERROR) return (ERROR);
         if (token != TRSQPAREN)
             return (error("Right square parenthesis is not found"));
         token = scan();
-        printf(" ]");
+        // printf(" ]");
     }
     return (NORMAL);
 }
@@ -767,9 +1025,9 @@ int parse_expression() {
     if (parse_simple_expression() == ERROR) return (ERROR);
     while (token == TEQUAL || token == TNOTEQ || token == TLE ||
            token == TLEEQ || token == TGR || token == TGREQ) {
-        printf(" ");
+        // printf(" ");
         if (parse_relational_op() == ERROR) return (ERROR);
-        printf(" ");
+        // printf(" ");
         if (parse_simple_expression() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -778,14 +1036,14 @@ int parse_expression() {
 // 単純式の構文解析関数
 int parse_simple_expression() {
     if (token == TPLUS || token == TMINUS) {
-        printf("%s ", tokenstr[token]);
+        // printf("%s ", tokenstr[token]);
         token = scan();
     }
     if (parse_term() == ERROR) return (ERROR);
     while (token == TPLUS || token == TMINUS || token == TOR) {
-        printf(" ");
+        // printf(" ");
         if (parse_additive_op() == ERROR) return (ERROR);
-        printf(" ");
+        // printf(" ");
         if (parse_term() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -795,9 +1053,9 @@ int parse_simple_expression() {
 int parse_term() {
     if (parse_factor() == ERROR) return (ERROR);
     while (token == TSTAR || token == TDIV || token == TAND) {
-        printf(" ");
+        // printf(" ");
         if (parse_multiplicative_op() == ERROR) return (ERROR);
-        printf(" ");
+        // printf(" ");
         if (parse_factor() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -812,25 +1070,25 @@ int parse_factor() {
         if (parse_constant() == ERROR) return (ERROR);
     } else if (token == TLPAREN) {
         token = scan();
-        printf("( ");
+        // printf("( ");
         if (parse_expression() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        printf(" )");
+        // printf(" )");
     } else if (token == TNOT) {
         token = scan();
-        printf("not ");
+        // printf("not ");
         if (parse_factor() == ERROR) return (ERROR);
     } else if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
-        printf("%s", tokenstr[token]);
+        // printf("%s", tokenstr[token]);
         token = scan();
         if (token != TLPAREN) return (error("Left parenthesis is not found"));
         token = scan();
-        printf(" ( ");
+        // printf(" ( ");
         if (parse_expression() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        printf(" )");
+        // printf(" )");
     } else {
         return (error("Factor is not found"));
     }
@@ -841,16 +1099,16 @@ int parse_factor() {
 int parse_constant() {
     if (token == TNUMBER) {
         token = scan();
-        printf("%d", num_attr);
+        // printf("%d", num_attr);
     } else if (token == TSTRING) {
         token = scan();
-        printf("\'%s\'", string_attr);
+        // printf("\'%s\'", string_attr);
     } else if (token == TFALSE) {
         token = scan();
-        printf("false");
+        // printf("false");
     } else if (token == TTRUE) {
         token = scan();
-        printf("true");
+        // printf("true");
     } else {
         return (error("Constant is not found"));
     }
@@ -860,7 +1118,7 @@ int parse_constant() {
 // 乗算演算子の構文解析関数
 int parse_multiplicative_op() {
     if (token == TSTAR || token == TDIV || token == TAND) {
-        printf("%s", tokenstr[token]);
+        // printf("%s", tokenstr[token]);
         token = scan();
     } else {
         return (error("Multiplicative operator is not found"));
@@ -871,7 +1129,7 @@ int parse_multiplicative_op() {
 // 加算演算子の構文解析関数
 int parse_additive_op() {
     if (token == TPLUS || token == TMINUS || token == TOR) {
-        printf("%s", tokenstr[token]);
+        // printf("%s", tokenstr[token]);
         token = scan();
     } else {
         return (error("Additive operator is not found"));
@@ -883,7 +1141,7 @@ int parse_additive_op() {
 int parse_relational_op() {
     if (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ ||
         token == TGR || token == TGREQ) {
-        printf("%s", tokenstr[token]);
+        // printf("%s", tokenstr[token]);
         token = scan();
     } else {
         return (error("Relational operator is not found"));
@@ -896,20 +1154,20 @@ int parse_input_stmt() {
     indent_print(indent);
     if (token != TREAD && token != TREADLN)
         return (error("Keyword 'read' or 'readln' is not found"));
-    printf("%s", tokenstr[token]);
+    // printf("%s", tokenstr[token]);
     token = scan();
     if (token == TLPAREN) {
         token = scan();
-        printf(" ( ");
+        // printf(" ( ");
         if (parse_variable() == ERROR) return (ERROR);
         while (token == TCOMMA) {
             token = scan();
-            printf(" , ");
+            // printf(" , ");
             if (parse_variable() == ERROR) return (ERROR);
         }
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        printf(" )");
+        // printf(" )");
     }
     indent--;
     return (NORMAL);
@@ -920,20 +1178,20 @@ int parse_output_stmt() {
     indent_print(indent);
     if (token != TWRITE && token != TWRITELN)
         return (error("Keyword 'write' or 'writeln' is not found"));
-    printf("%s", tokenstr[token]);
+    // printf("%s", tokenstr[token]);
     token = scan();
     if (token == TLPAREN) {
         token = scan();
-        printf(" ( ");
+        // printf(" ( ");
         if (parse_output_format() == ERROR) return (ERROR);
         while (token == TCOMMA) {
             token = scan();
-            printf(" , ");
+            // printf(" , ");
             if (parse_output_format() == ERROR) return (ERROR);
         }
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        printf(" )");
+        // printf(" )");
     }
     indent--;
     return (NORMAL);
@@ -947,14 +1205,14 @@ int parse_output_format() {
         if (parse_expression() == ERROR) return (ERROR);
         if (token == TCOLON) {
             token = scan();
-            printf(" : ");
+            // printf(" : ");
             if (token != TNUMBER) return (error("Number is not found"));
             token = scan();
-            printf("%d", num_attr);
+            // printf("%d", num_attr);
         }
     } else if (token == TSTRING) {
         token = scan();
-        printf("\'%s\'", string_attr);
+        // printf("\'%s\'", string_attr);
     } else {
         return (error("Output format is not found"));
     }
@@ -989,6 +1247,8 @@ int main(int nc, char *np[]) {
     // まず1つめのトークンを読んでおく
     token = scan();
 
+    // 変数表の第1行を出力
+    printf("%-15s|%-30s|%-15s|%-10s\n", "Name", "Type", "Define", "References");
     // 構文解析
     parse_program();
 
@@ -996,7 +1256,6 @@ int main(int nc, char *np[]) {
     end_scan();
 
     // 変数表の出力
-    printf("Global Identifier Table\n");
     print_globalidtab();
 
     return 0;
