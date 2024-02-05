@@ -48,7 +48,7 @@ int call_stmt_flag = 0;
 int array_flag = 0;
 
 
-// 記号表のための構造体の定義
+// 変数表のための構造体の定義
 
 // 型
 struct TYPE {
@@ -65,7 +65,7 @@ struct LINE {
     struct LINE *nextlinep;
 };
 
-// 記号表
+// 変数表
 struct ID {
     char *name;
     char *procname; /* 手続き宣言内で定義されている時の手続き名．それ以外はNULL
@@ -83,12 +83,12 @@ void init_globalidtab() { /* Initialise the table */
     globalidroot = NULL;
 }
 
-// 副プログラム宣言内の記号表の初期化
+// 副プログラム宣言内の変数表の初期化
 void init_localidtab() { /* Initialise the table */
     localidroot = NULL;
 }
 
-// 大域記号表の検索
+// 大域変数表の検索
 struct ID *search_globalidtab(char *np) {
     struct ID *p;
 
@@ -98,7 +98,7 @@ struct ID *search_globalidtab(char *np) {
     return (NULL);
 }
 
-// 副プログラム宣言内の記号表の検索
+// 副プログラム宣言内の変数表の検索
 struct ID *search_localidtab(char *np) {
     struct ID *p;
 
@@ -108,7 +108,7 @@ struct ID *search_localidtab(char *np) {
     return (NULL);
 }
 
-// 大域記号表への変数の登録
+// 大域変数表への変数の登録
 int set_globalidtab(char *np, struct TYPE *tp, int ispara, int deflinenum) {
     struct ID *p;
     char *cp;
@@ -149,7 +149,7 @@ int set_globalidtab(char *np, struct TYPE *tp, int ispara, int deflinenum) {
     return (NORMAL);
 }
 
-// 副プログラム宣言内の記号表への変数の登録
+// 副プログラム宣言内の変数表への変数の登録
 int set_localidtab(char *np, char *pnp, struct TYPE *tp, int ispara, int deflinenum) {
     struct ID *p;
     char *cp;
@@ -191,7 +191,7 @@ int set_localidtab(char *np, char *pnp, struct TYPE *tp, int ispara, int defline
     return (NORMAL);
 }
 
-// 大域記号表の出力
+// 大域変数表の出力
 void print_globalidtab() {
     struct ID *p;
     for (p = globalidroot; p != NULL; p = p->nextp) {
@@ -245,7 +245,7 @@ void print_globalidtab() {
     }
 }
 
-// 副プログラム宣言内の記号表の出力
+// 副プログラム宣言内の変数表の出力
 void print_localidtab() {
     struct ID *p;
 
@@ -273,6 +273,27 @@ void print_localidtab() {
         }
     }
 }
+
+// 副プログラム宣言内の変数表の解放
+void free_localidtab() {
+    // printf("free_localidtab\n");
+    struct ID *p, *q;
+    for (p = localidroot; p != NULL; p = q) {
+        q = p->nextp;
+        free(p);
+    }
+}
+
+// 大域変数表の解放
+void free_globalidtab() {
+    // printf("free_globalidtab\n");
+    struct ID *p, *q;
+    for (p = globalidroot; p != NULL; p = q) {
+        q = p->nextp;
+        free(p);
+    }
+}
+
 
 // 読み込んだトークンを格納する変数
 int token;
@@ -762,10 +783,13 @@ int parse_subpro_decl() {
     if (PPPPP) printf(";\n");
     indent = 0;
 
-    // 副プログラム宣言内の記号表を出力
+    // 副プログラム宣言内の変数表を出力
     print_localidtab();
 
-    // 副プログラム宣言内の記号表を初期化
+    // 副プログラム宣言内の変数表を解放
+    free_localidtab();
+
+    // 副プログラム宣言内の変数表を初期化
     init_localidtab();
 
     strcpy(subpro_name, "");
@@ -1300,6 +1324,9 @@ int main(int nc, char *np[]) {
 
     // 変数表の出力
     print_globalidtab();
+
+    // 変数表の解放
+    free_globalidtab();
 
     return 0;
 }
