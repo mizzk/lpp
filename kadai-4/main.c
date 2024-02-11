@@ -1,23 +1,37 @@
 #include "token-list.h"
-#define PPPPP 1
+#define ENABLE_PRETTY_PRINT 1
+
+
+
+// 以下は課題4で追加した変数や関数の定義
 
 FILE *caslfp = NULL; /* File pointer */
 
+// 新しいラベル番号を返す
 int get_label_num(void) {
     static int labelcounter = 1;
     return labelcounter++;
 }
+
+// ラベル番号を指定してラベルを生成する
 void gen_label(int labelnum) {
     fprintf(caslfp, "L%04d\n", labelnum);
 }
+
+// コードを生成する(opc: オペコード, opr: オペランド)
 void gen_code(char *opc, char *opr) {
     fprintf(caslfp, "\t%s\t%s\n", opc, opr);
 }
+
+// コードを生成する(opc: オペコード, opr: オペランド, label: ラベル番号)
 void gen_code_label(char *opc, char *opr, int label) {
     fprintf(caslfp, "\t%s\t%sL%04d\n", opc, opr, label);
 }
 
 
+
+
+// 以下は課題3で追加した変数や関数の定義
 
 // 型の文字列
 char *typestr[NUMOFTYPE + 1] = {"",
@@ -337,7 +351,7 @@ int indent = 0;
 // 段付けをする関数
 void indent_print(int ind) {
     for (int i = 0; i < ind; i++) {
-        if (PPPPP) printf("    ");
+        if (ENABLE_PRETTY_PRINT) printf("    ");
     }
 }
 
@@ -390,18 +404,18 @@ int parse_empty_stmt();
 int parse_program() {
     if (token != TPROGRAM) return (error("Keyword 'program' is not found"));
     token = scan();
-    if (PPPPP) printf("program");
+    if (ENABLE_PRETTY_PRINT) printf("program");
     if (token != TNAME) return (error("Program name is not found"));
     token = scan();
-    if (PPPPP) printf(" %s", string_attr);
+    if (ENABLE_PRETTY_PRINT) printf(" %s", string_attr);
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    if (PPPPP) printf(";\n");
+    if (ENABLE_PRETTY_PRINT) printf(";\n");
     if (parse_block() == ERROR) return (ERROR);
     if (token != TDOT)
         return (error("Period is not found at the end of program"));
     token = scan();
-    if (PPPPP) printf(".\n");
+    if (ENABLE_PRETTY_PRINT) printf(".\n");
     return (NORMAL);
 }
 
@@ -425,26 +439,26 @@ int parse_var_decl() {
     if (token != TVAR) return (error("Keyword 'var' is not found"));
     token = scan();
     indent_print(1);
-    if (PPPPP) printf("var\n");
+    if (ENABLE_PRETTY_PRINT) printf("var\n");
     indent_print(2);
     if (parse_var_names() == ERROR) return (ERROR);
     if (token != TCOLON) return (error("Colon is not found"));
     token = scan();
-    if (PPPPP) printf(" : ");
+    if (ENABLE_PRETTY_PRINT) printf(" : ");
     if (parse_type() == ERROR) return (ERROR);
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    if (PPPPP) printf(";\n");
+    if (ENABLE_PRETTY_PRINT) printf(";\n");
     while (token == TNAME) {
         indent_print(2);
         if (parse_var_names() == ERROR) return (ERROR);
         if (token != TCOLON) return (error("Colon is not found"));
         token = scan();
-        if (PPPPP) printf(" : ");
+        if (ENABLE_PRETTY_PRINT) printf(" : ");
         if (parse_type() == ERROR) return (ERROR);
         if (token != TSEMI) return (error("Semicolon is not found"));
         token = scan();
-        if (PPPPP) printf(";\n");
+        if (ENABLE_PRETTY_PRINT) printf(";\n");
     }
     indent = 0;
 
@@ -457,7 +471,7 @@ int parse_var_names() {
     if (parse_var_name() == ERROR) return (ERROR);
     while (token == TCOMMA) {
         token = scan();
-        if (PPPPP) printf(" , ");
+        if (ENABLE_PRETTY_PRINT) printf(" , ");
         if (parse_var_name() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -521,7 +535,7 @@ int parse_var_name() {
             p->irefp = q;
         }
     }
-    if (PPPPP) printf("%s", string_attr);
+    if (ENABLE_PRETTY_PRINT) printf("%s", string_attr);
     token = scan();
     return (NORMAL);
 }
@@ -646,7 +660,7 @@ int parse_standard_type() {
             }
         }
 
-        if (PPPPP) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
         token = scan();
         int normal = 0;  // Declare the identifier normal
         return (NORMAL);
@@ -666,25 +680,25 @@ int parse_array_type() {
 
     if (token != TARRAY) return (error("Keyword 'array' is not found"));
     token = scan();
-    if (PPPPP) printf("array");
+    if (ENABLE_PRETTY_PRINT) printf("array");
     if (token != TLSQPAREN)
         return (error("Left square parenthesis is not found"));
     token = scan();
-    if (PPPPP) printf(" [ ");
+    if (ENABLE_PRETTY_PRINT) printf(" [ ");
     if (token != TNUMBER) return (error("Number is not found"));
     token = scan();
 
     // 配列型のサイズを記録
     tp->arraysize = num_attr;
 
-    if (PPPPP) printf("%d", num_attr);
+    if (ENABLE_PRETTY_PRINT) printf("%d", num_attr);
     if (token != TRSQPAREN)
         return (error("Right square parenthesis is not found"));
     token = scan();
-    if (PPPPP) printf(" ] ");
+    if (ENABLE_PRETTY_PRINT) printf(" ] ");
     if (token != TOF) return (error("Keyword 'of' is not found"));
     token = scan();
-    if (PPPPP) printf("of ");
+    if (ENABLE_PRETTY_PRINT) printf("of ");
 
     // 配列型の要素の型を記録
     struct TYPE *etp;
@@ -744,7 +758,7 @@ int parse_subpro_decl() {
     indent_print(1);
     if (token != TPROCEDURE) return (error("Keyword 'procedure' is not found"));
     token = scan();
-    if (PPPPP) printf("procedure ");
+    if (ENABLE_PRETTY_PRINT) printf("procedure ");
     if (parse_procedure_name() == ERROR) return (ERROR);
 
     if (token == TLPAREN) {
@@ -769,7 +783,7 @@ int parse_subpro_decl() {
     }
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    if (PPPPP) printf(";\n");
+    if (ENABLE_PRETTY_PRINT) printf(";\n");
     if (token == TVAR) {
         if (parse_var_decl() == ERROR) return (ERROR);
     }
@@ -780,7 +794,7 @@ int parse_subpro_decl() {
     if (parse_comp_stmt() == ERROR) return (ERROR);
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    if (PPPPP) printf(";\n");
+    if (ENABLE_PRETTY_PRINT) printf(";\n");
     indent = 0;
 
     // 副プログラム宣言内の変数表を出力
@@ -847,7 +861,7 @@ int parse_procedure_name() {
             p->irefp = q;
         }
     }
-    if (PPPPP) printf("%s", string_attr);
+    if (ENABLE_PRETTY_PRINT) printf("%s", string_attr);
     token = scan();
     return (NORMAL);
 }
@@ -857,24 +871,24 @@ int parse_formal_params() {
     formal_params_flag = 1;
     if (token != TLPAREN) return (error("Left parenthesis is not found"));
     token = scan();
-    if (PPPPP) printf(" ( ");
+    if (ENABLE_PRETTY_PRINT) printf(" ( ");
     if (parse_var_names() == ERROR) return (ERROR);
     if (token != TCOLON) return (error("Colon is not found"));
     token = scan();
-    if (PPPPP) printf(" : ");
+    if (ENABLE_PRETTY_PRINT) printf(" : ");
     if (parse_type() == ERROR) return (ERROR);
     while (token == TSEMI) {
         token = scan();
-        if (PPPPP) printf("; ");
+        if (ENABLE_PRETTY_PRINT) printf("; ");
         if (parse_var_names() == ERROR) return (ERROR);
         if (token != TCOLON) return (error("Colon is not found"));
         token = scan();
-        if (PPPPP) printf(" : ");
+        if (ENABLE_PRETTY_PRINT) printf(" : ");
         if (parse_type() == ERROR) return (ERROR);
     }
     if (token != TRPAREN) return (error("Right parenthesis is not found"));
     token = scan();
-    if (PPPPP) printf(" )");
+    if (ENABLE_PRETTY_PRINT) printf(" )");
     formal_params_flag = 0;
     return (NORMAL);
 }
@@ -885,7 +899,7 @@ int parse_comp_stmt() {
     token = scan();
     int original_indent = indent;
     indent_print(indent);
-    if (PPPPP) printf("begin\n");
+    if (ENABLE_PRETTY_PRINT) printf("begin\n");
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
     while (token == TSEMI) {
@@ -894,7 +908,7 @@ int parse_comp_stmt() {
             empty_stmt_flag = 0;
         }
         token = scan();
-        if (PPPPP) printf(";\n");
+        if (ENABLE_PRETTY_PRINT) printf(";\n");
         indent = original_indent + 1;
         if (parse_stmt() == ERROR) return (ERROR);
     }
@@ -902,11 +916,11 @@ int parse_comp_stmt() {
     if (empty_stmt_flag == 1) {
         empty_stmt_flag = 0;
     } else {
-        if (PPPPP) printf("\n");
+        if (ENABLE_PRETTY_PRINT) printf("\n");
     }
     indent_print(original_indent);
     token = scan();
-    if (PPPPP) printf("end");
+    if (ENABLE_PRETTY_PRINT) printf("end");
     return (NORMAL);
 }
 
@@ -943,19 +957,19 @@ int parse_cond_stmt() {
     indent_print(indent);
     if (token != TIF) return (error("Keyword 'if' is not found"));
     token = scan();
-    if (PPPPP) printf("if ");
+    if (ENABLE_PRETTY_PRINT) printf("if ");
     if_indent = indent;
     if (parse_expression() == ERROR) return (ERROR);
     if (token != TTHEN) return (error("Keyword 'then' is not found"));
     token = scan();
-    if (PPPPP) printf(" then\n");
+    if (ENABLE_PRETTY_PRINT) printf(" then\n");
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
     if (token == TELSE) {
-        if (PPPPP) printf("\n");
+        if (ENABLE_PRETTY_PRINT) printf("\n");
         token = scan();
         indent_print(if_indent);
-        if (PPPPP) printf("else\n");
+        if (ENABLE_PRETTY_PRINT) printf("else\n");
         indent = if_indent + 1;
         if (parse_stmt() == ERROR) return (ERROR);
     }
@@ -968,11 +982,11 @@ int parse_iter_stmt() {
     indent_print(indent);
     if (token != TWHILE) return (error("Keyword 'while' is not found"));
     token = scan();
-    if (PPPPP) printf("while ");
+    if (ENABLE_PRETTY_PRINT) printf("while ");
     if (parse_expression() == ERROR) return (ERROR);
     if (token != TDO) return (error("Keyword 'do' is not found"));
     token = scan();
-    if (PPPPP) printf(" do\n");
+    if (ENABLE_PRETTY_PRINT) printf(" do\n");
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
     indent--;
@@ -986,7 +1000,7 @@ int parse_exit_stmt() {
     indent_print(indent);
     if (token != TBREAK) return (error("Keyword 'break' is not found"));
     token = scan();
-    if (PPPPP) printf("break");
+    if (ENABLE_PRETTY_PRINT) printf("break");
     // indent--;
     if (while_flag == 0) {
         return (error("Break statement is not in while statement"));
@@ -1003,11 +1017,11 @@ int parse_call_stmt() {
     if (parse_procedure_name() == ERROR) return (ERROR);
     if (token == TLPAREN) {
         token = scan();
-        if (PPPPP) printf(" ( ");
+        if (ENABLE_PRETTY_PRINT) printf(" ( ");
         if (parse_expressions() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (PPPPP) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )");
     }
     indent--;
     call_stmt_flag = 0;
@@ -1019,7 +1033,7 @@ int parse_expressions() {
     if (parse_expression() == ERROR) return (ERROR);
     while (token == TCOMMA) {
         token = scan();
-        if (PPPPP) printf(" , ");
+        if (ENABLE_PRETTY_PRINT) printf(" , ");
         if (parse_expression() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -1030,7 +1044,7 @@ int parse_return_stmt() {
     indent_print(indent);
     if (token != TRETURN) return (error("Keyword 'return' is not found"));
     token = scan();
-    if (PPPPP) printf("return");
+    if (ENABLE_PRETTY_PRINT) printf("return");
     indent--;
     return (NORMAL);
 }
@@ -1041,7 +1055,7 @@ int parse_assign_stmt() {
     if (parse_left_part() == ERROR) return (ERROR);
     if (token != TASSIGN) return (error("Assignment operator is not found"));
     token = scan();
-    if (PPPPP) printf(" := ");
+    if (ENABLE_PRETTY_PRINT) printf(" := ");
     if (parse_expression() == ERROR) return (ERROR);
     indent--;
     return (NORMAL);
@@ -1058,12 +1072,12 @@ int parse_variable() {
     if (parse_var_name() == ERROR) return (ERROR);
     if (token == TLSQPAREN) {
         token = scan();
-        if (PPPPP) printf(" [ ");
+        if (ENABLE_PRETTY_PRINT) printf(" [ ");
         if (parse_expression() == ERROR) return (ERROR);
         if (token != TRSQPAREN)
             return (error("Right square parenthesis is not found"));
         token = scan();
-        if (PPPPP) printf(" ]");
+        if (ENABLE_PRETTY_PRINT) printf(" ]");
     }
     return (NORMAL);
 }
@@ -1073,9 +1087,9 @@ int parse_expression() {
     if (parse_simple_expression() == ERROR) return (ERROR);
     while (token == TEQUAL || token == TNOTEQ || token == TLE ||
            token == TLEEQ || token == TGR || token == TGREQ) {
-        if (PPPPP) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" ");
         if (parse_relational_op() == ERROR) return (ERROR);
-        if (PPPPP) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" ");
         if (parse_simple_expression() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -1084,14 +1098,14 @@ int parse_expression() {
 // 単純式の構文解析関数
 int parse_simple_expression() {
     if (token == TPLUS || token == TMINUS) {
-        if (PPPPP) printf("%s ", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s ", tokenstr[token]);
         token = scan();
     }
     if (parse_term() == ERROR) return (ERROR);
     while (token == TPLUS || token == TMINUS || token == TOR) {
-        if (PPPPP) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" ");
         if (parse_additive_op() == ERROR) return (ERROR);
-        if (PPPPP) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" ");
         if (parse_term() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -1101,9 +1115,9 @@ int parse_simple_expression() {
 int parse_term() {
     if (parse_factor() == ERROR) return (ERROR);
     while (token == TSTAR || token == TDIV || token == TAND) {
-        if (PPPPP) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" ");
         if (parse_multiplicative_op() == ERROR) return (ERROR);
-        if (PPPPP) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" ");
         if (parse_factor() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -1118,25 +1132,25 @@ int parse_factor() {
         if (parse_constant() == ERROR) return (ERROR);
     } else if (token == TLPAREN) {
         token = scan();
-        if (PPPPP) printf("( ");
+        if (ENABLE_PRETTY_PRINT) printf("( ");
         if (parse_expression() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (PPPPP) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )");
     } else if (token == TNOT) {
         token = scan();
-        if (PPPPP) printf("not ");
+        if (ENABLE_PRETTY_PRINT) printf("not ");
         if (parse_factor() == ERROR) return (ERROR);
     } else if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
-        if (PPPPP) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
         token = scan();
         if (token != TLPAREN) return (error("Left parenthesis is not found"));
         token = scan();
-        if (PPPPP) printf(" ( ");
+        if (ENABLE_PRETTY_PRINT) printf(" ( ");
         if (parse_expression() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (PPPPP) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )");
     } else {
         return (error("Factor is not found"));
     }
@@ -1147,16 +1161,16 @@ int parse_factor() {
 int parse_constant() {
     if (token == TNUMBER) {
         token = scan();
-        if (PPPPP) printf("%d", num_attr);
+        if (ENABLE_PRETTY_PRINT) printf("%d", num_attr);
     } else if (token == TSTRING) {
         token = scan();
-        if (PPPPP) printf("\'%s\'", string_attr);
+        if (ENABLE_PRETTY_PRINT) printf("\'%s\'", string_attr);
     } else if (token == TFALSE) {
         token = scan();
-        if (PPPPP) printf("false");
+        if (ENABLE_PRETTY_PRINT) printf("false");
     } else if (token == TTRUE) {
         token = scan();
-        if (PPPPP) printf("true");
+        if (ENABLE_PRETTY_PRINT) printf("true");
     } else {
         return (error("Constant is not found"));
     }
@@ -1166,7 +1180,7 @@ int parse_constant() {
 // 乗算演算子の構文解析関数
 int parse_multiplicative_op() {
     if (token == TSTAR || token == TDIV || token == TAND) {
-        if (PPPPP) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
         token = scan();
     } else {
         return (error("Multiplicative operator is not found"));
@@ -1177,7 +1191,7 @@ int parse_multiplicative_op() {
 // 加算演算子の構文解析関数
 int parse_additive_op() {
     if (token == TPLUS || token == TMINUS || token == TOR) {
-        if (PPPPP) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
         token = scan();
     } else {
         return (error("Additive operator is not found"));
@@ -1189,7 +1203,7 @@ int parse_additive_op() {
 int parse_relational_op() {
     if (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ ||
         token == TGR || token == TGREQ) {
-        if (PPPPP) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
         token = scan();
     } else {
         return (error("Relational operator is not found"));
@@ -1202,20 +1216,20 @@ int parse_input_stmt() {
     indent_print(indent);
     if (token != TREAD && token != TREADLN)
         return (error("Keyword 'read' or 'readln' is not found"));
-    if (PPPPP) printf("%s", tokenstr[token]);
+    if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
     token = scan();
     if (token == TLPAREN) {
         token = scan();
-        if (PPPPP) printf(" ( ");
+        if (ENABLE_PRETTY_PRINT) printf(" ( ");
         if (parse_variable() == ERROR) return (ERROR);
         while (token == TCOMMA) {
             token = scan();
-            if (PPPPP) printf(" , ");
+            if (ENABLE_PRETTY_PRINT) printf(" , ");
             if (parse_variable() == ERROR) return (ERROR);
         }
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (PPPPP) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )");
     }
     indent--;
     return (NORMAL);
@@ -1226,20 +1240,20 @@ int parse_output_stmt() {
     indent_print(indent);
     if (token != TWRITE && token != TWRITELN)
         return (error("Keyword 'write' or 'writeln' is not found"));
-    if (PPPPP) printf("%s", tokenstr[token]);
+    if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
     token = scan();
     if (token == TLPAREN) {
         token = scan();
-        if (PPPPP) printf(" ( ");
+        if (ENABLE_PRETTY_PRINT) printf(" ( ");
         if (parse_output_format() == ERROR) return (ERROR);
         while (token == TCOMMA) {
             token = scan();
-            if (PPPPP) printf(" , ");
+            if (ENABLE_PRETTY_PRINT) printf(" , ");
             if (parse_output_format() == ERROR) return (ERROR);
         }
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (PPPPP) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )");
     }
     indent--;
     return (NORMAL);
@@ -1253,14 +1267,14 @@ int parse_output_format() {
         if (parse_expression() == ERROR) return (ERROR);
         if (token == TCOLON) {
             token = scan();
-            if (PPPPP) printf(" : ");
+            if (ENABLE_PRETTY_PRINT) printf(" : ");
             if (token != TNUMBER) return (error("Number is not found"));
             token = scan();
-            if (PPPPP) printf("%d", num_attr);
+            if (ENABLE_PRETTY_PRINT) printf("%d", num_attr);
         }
     } else if (token == TSTRING) {
         token = scan();
-        if (PPPPP) printf("\'%s\'", string_attr);
+        if (ENABLE_PRETTY_PRINT) printf("\'%s\'", string_attr);
     } else {
         return (error("Output format is not found"));
     }
