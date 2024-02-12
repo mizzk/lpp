@@ -91,8 +91,5 @@ extern char string_attr[MAXSTRSIZE];
 extern int get_linenum(void);
 extern void end_scan(void);
 
-// /* id-list.c */
-// void init_idtab(void);
-// void id_countup(char *np);
-// void print_idtab(void);
-// void release_idtab(void);
+/* Output library module */
+extern void outlib(FILE *caslfp);

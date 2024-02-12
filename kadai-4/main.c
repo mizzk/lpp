@@ -1,9 +1,229 @@
 #include "token-list.h"
-#define ENABLE_PRETTY_PRINT 1
+#define ENABLE_PRETTY_PRINT 0
+#define ENABLE_PRETTY_PRINT_IN_CASL 1
+
+
+// 入力ファイル
+// sample11pp.mpl
+// program sample11pp;
+// procedure kazuyomikomi(n : integer);
+// begin
+// writeln(’input the number of data’);
+// readln(n)
+// end;
+// var sum : integer;
+// procedure wakakidasi;
+// begin
+// writeln(’Sum of data = ’, sum)
+// end;
+// var data : integer;
+// procedure goukei(n, s : integer);
+// var data : integer;
+// begin
+// s := 0;
+// while n > 0 do begin
+// readln(data);
+// s := s + data;
+// n := n - 1
+// end
+// end;
+// var n : integer;
+// begin
+// call kazuyomikomi(n);
+// call goukei(n * 2, sum);
+// call wakakidasi
+// end.
+
+// 出力ファイル
+// 1 %%sample11pp START L0001
+// 2 ; program sample11pp;
+// 3 $$n%kazuyomikomi
+// 4 DC 0
+// 5 ; procedure kazuyomikomi ( n : integer );
+// 6 $kazuyomikomi
+// 7 POP GR2
+// 8 POP GR1
+// 9 ST GR1,$$n%kazuyomikomi
+// 10 PUSH 0,GR2
+// 11 ; begin
+// 12 LAD GR1,=’input the number of data’
+// 13 LAD GR2,0
+// 14 CALL WRITESTR
+// 15 CALL WRITELINE
+// 16 ; writeln ( ’input the number of data’ );
+// 17 LD GR1,$$n%kazuyomikomi
+// 18 CALL READINT
+// 19 CALL READLINE
+// 20 ; readln ( n )
+// 21 RET
+// 22 ; end;
+// 23 ; var
+// 24 $sum DC 0
+// 25 ; sum : integer;
+// 26 ; procedure wakakidasi;
+// 27 $wakakidasi
+// 28 ; begin
+// 29 LAD GR1,=’Sum of data = ’
+// 30 LAD GR2,0
+// 31 CALL WRITESTR
+// 32 LD GR1,$sum
+// 33 LAD GR2,0
+// 34 CALL WRITEINT
+// 35 CALL WRITELINE
+// 36 ; writeln ( ’Sum of data = ’ , sum )
+// 37 RET
+// 38 ; end;
+// 39 ; var
+// 40 $data DC 0
+// 41 ; data : integer;
+// 42 $$s%goukei
+// 43 DC 0
+// 44 $$n%goukei
+// 45 DC 0
+// 46 ; procedure goukei ( n , s : integer );
+// 47 ; var
+// 48 $data%goukei
+// 49 DC 0
+// 50 ; data : integer;
+// 51 $goukei
+// 52 POP GR2
+// 53 POP GR1
+// 54 ST GR1,$$s%goukei
+// 55 POP GR1
+// 56 ST GR1,$$n%goukei
+// 57 PUSH 0,GR2
+// 58 ; begin
+// 59 LD GR1,$$s%goukei
+// 60 PUSH 0,GR1
+// 61 LAD GR1,0
+// 62 POP GR2
+// 63 ST GR1,0,GR2
+// 64 ;s := 0;
+// 65 L0002
+// 66 LD GR1,$$n%goukei
+// 67 LD GR1,0,GR1
+// 68 PUSH 0,GR1
+// 69 LAD GR1,0
+// 70 POP GR2
+// 71 CPA GR2,GR1
+// 72 JPL L0004
+// 73 LAD GR1,0
+// 74 JUMP L0005
+// 75 L0004
+// 76 LAD GR1,1
+// 77 L0005
+// 78 CPA GR1,GR0
+// 79 JZE L0003
+// 80 ; while n > 0 do
+// 81 ; begin
+// 82 LAD GR1,$data%goukei
+// 83 CALL READINT
+// 84 CALL READLINE
+// 85 ; readln( data );
+// 86 LD GR1,$$s%goukei
+// 87 PUSH 0,GR1
+// 88 LD GR1,$$s%goukei
+// 89 LD GR1,0,GR1
+// 90 PUSH 0,GR1
+// 91 LD GR1,$data%goukei
+// 92 POP GR2
+// 93 ADDA GR1,GR2
+// 94 JOV EOVF
+// 95 POP GR2
+// 96 ST GR1,0,GR2
+// 97 ; s := s + data;
+// 98 LD GR1,$$n%goukei
+// 99 PUSH 0,GR1
+// 100 LD GR1,$$n%goukei
+// 101 LD GR1,0,GR1
+// 102 PUSH 0,GR1
+// 103 LAD GR1,1
+// 104 POP GR2
+// 105 SUBA GR2,GR1
+// 106 JOV EOVF
+// 107 LD GR1,GR2
+// 108 POP GR2
+// 109 ST GR1,0,GR2
+// 110 ; n := n - 1
+// 111 ; end
+// 112 JUMP L0002
+// 113 L0003
+// 114 RET
+// 115 ; end;
+// 116 ; var
+// 117 $n DC 0
+// 118 ; n : integer;
+// 119 L0001
+// 120 LAD GR0,0
+// 121 ; begin
+// 122 LAD GR1,$n
+// 123 PUSH 0,GR1
+// 124 CALL $kazuyomikomi
+// 125 ; call kazuyomikomi ( n );
+// 126 LAD GR1,$n
+// 127 LD GR1,0,GR1
+// 128 PUSH 0,GR1
+// 129 LAD GR1,2
+// 130 POP GR2
+// 131 MULA GR1,GR2
+// 132 JOV EOVF
+// 133 LAD GR2,=0
+// 134 ST GR1,0,GR2
+// 135 PUSH 0,GR2
+// 136 LAD GR1,$sum
+// 137 PUSH 0,GR1
+// 138 CALL $goukei
+// 139 ; call goukei ( n * 2 , sum );
+// 140 CALL $wakakidasi
+// 141 ; call wakakidasi
+// 142 CALL FLUSH
+// 143 RET
+// 144 ; end.
+
+
+
+
 
 
 
 // 以下は課題4で追加した変数や関数の定義
+
+// breakで戻るべきラベル番号を記憶する変数
+int break_label = -1;
+
+// 最後に読んだ式でoprが1になったかどうか
+int is_expression_opr = 0;
+
+// 現在oprが続いているかどうか
+int is_opr = 0;
+
+// 定数のTRUEが出現したかどうか
+int is_constant_true = 0;
+
+// 定数のFALSEが出現したかどうか
+int is_constant_false = 0;
+
+// 左辺部かどうか
+int is_left_part = 0;
+
+// 現在の代入文の左辺部がパラメータでない変数であるかどうか
+int is_vari_left_part = 0;
+
+// 現在の左辺部の変数名
+char left_variable[MAXSTRSIZE] = "";
+
+// 現在の左辺部の変数名が配列型であるかどうか
+int is_left_array = 0;
+
+// 現在の配列の名前
+char current_array_name[MAXSTRSIZE] = "";
+
+// 現在の関係演算子
+int current_relational_opr = 0;
+
+// CASLに表示するコメントを記憶する文字列
+char casl_comment[MAXSTRSIZE] = "; ";
+
 
 FILE *caslfp = NULL; /* File pointer */
 
@@ -23,11 +243,15 @@ void gen_code(char *opc, char *opr) {
     fprintf(caslfp, "\t%s\t%s\n", opc, opr);
 }
 
-// コードを生成する(opc: オペコード, opr: オペランド, label: ラベル番号)
-void gen_code_label(char *opc, char *opr, int label) {
-    fprintf(caslfp, "\t%s\t%sL%04d\n", opc, opr, label);
+// コードを生成する(opc: オペコード, label: ラベル番号)
+void gen_code_label(char *opc, int labelnum) {
+    fprintf(caslfp, "\t%s\tL%04d\n", opc, labelnum);
 }
 
+// コードを生成する(opc: オペコード, opr: オペランド, label: ラベル番号)
+void gen_code_opr_label(char *opc, char *opr, int labelnum) {
+    fprintf(caslfp, "\t%s\t%s,L%04d\n", opc, opr, labelnum);
+}
 
 
 
@@ -242,19 +466,19 @@ void print_globalidtab() {
             }
             char tmpstring[MAXSTRSIZE] = "procedure";
             strcat(tmpstring, paratpstr);
-            printf("%-15s|%-30s|%-15d|%-10s\n", p->name, tmpstring,
-                   p->deflinenum, tmprefstring);
+            // printf("%-15s|%-30s|%-15d|%-10s\n", p->name, tmpstring,
+            //        p->deflinenum, tmprefstring);
         } else if (p->itp->ttype == TPARRAYINT ||
                    p->itp->ttype == TPARRAYCHAR ||
                    p->itp->ttype == TPARRAYBOOL) {
             char tmpstring[MAXSTRSIZE];
             sprintf(tmpstring, "array[%d] of %s", p->itp->arraysize,
                     typestr[p->itp->etp->ttype]);
-            printf("%-15s|%-30s|%-15d|%-10s\n", p->name, tmpstring,
-                   p->deflinenum, tmprefstring);
+            // printf("%-15s|%-30s|%-15d|%-10s\n", p->name, tmpstring,
+            //        p->deflinenum, tmprefstring);
         } else {
-            printf("%-15s|%-30s|%-15d|%-10s\n", p->name, typestr[p->itp->ttype],
-                   p->deflinenum, tmprefstring);
+            // printf("%-15s|%-30s|%-15d|%-10s\n", p->name, typestr[p->itp->ttype],
+            //        p->deflinenum, tmprefstring);
         }
     }
 }
@@ -279,11 +503,10 @@ void print_localidtab() {
             }
         }
         if (p->itp == NULL) {
-            printf("%-15s|NULL                          |%-15d|%-10s\n",
-                   p->name, p->deflinenum, tmprefstring);
+            // printf("%-15s|NULL                          |%-15d|%-10s\n",
+            //        p->name, p->deflinenum, tmprefstring);
         } else {
-            printf("%s:%-13s|%-30s|%-15d|%-10s\n", p->name, p->procname, typestr[p->itp->ttype],
-                   p->deflinenum, tmprefstring);
+            // printf("%s:%-13s|%-30s|%-15d|%-10s\n", p->name, p->procname, typestr[p->itp->ttype],p->deflinenum, tmprefstring);
         }
     }
 }
@@ -404,18 +627,32 @@ int parse_empty_stmt();
 int parse_program() {
     if (token != TPROGRAM) return (error("Keyword 'program' is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf("program");
+    if (ENABLE_PRETTY_PRINT) printf("program"); strcat(casl_comment, "program");
     if (token != TNAME) return (error("Program name is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" %s", string_attr);
+
+    // プログラム名のラベルを生成してSTART
+    int labelnum = get_label_num();
+    fprintf(caslfp, "%%%%%s\tSTART\tL%04d\n", string_attr, labelnum);
+
+    if (ENABLE_PRETTY_PRINT) printf(" %s", string_attr); strcat(casl_comment, " "); strcat(casl_comment, string_attr);
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(";\n");
+    if (ENABLE_PRETTY_PRINT) printf(";\n"); strcat(casl_comment, ";");
+
+    // caslfpにcasl_commentを出力してcasl_commentを初期化
+    if (ENABLE_PRETTY_PRINT_IN_CASL) fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
+
     if (parse_block() == ERROR) return (ERROR);
     if (token != TDOT)
         return (error("Period is not found at the end of program"));
     token = scan();
     if (ENABLE_PRETTY_PRINT) printf(".\n");
+
+    outlib(caslfp);
+    gen_code("END", "");
+
     return (NORMAL);
 }
 
@@ -428,39 +665,57 @@ int parse_block() {
             if (parse_subpro_decl() == ERROR) return (ERROR);
         }
     }
+    gen_label(1);
+    gen_code("LAD", "GR0,0");
     if (parse_comp_stmt() == ERROR) return (ERROR);
+    gen_code("CALL", "FLUSH");
+    gen_code("RET", "");
     return (NORMAL);
 }
 
 // 変数宣言部の構文解析関数
 int parse_var_decl() {
     var_decl_flag = 1;
+    // printf("DEBUG: var_decl");
 
     if (token != TVAR) return (error("Keyword 'var' is not found"));
     token = scan();
     indent_print(1);
     if (ENABLE_PRETTY_PRINT) printf("var\n");
-    indent_print(2);
+    strcat(casl_comment, "var");
+    fprintf(caslfp, "%s\n", casl_comment);
+    // printf("DEBUG: 661\n");
+    strcpy(casl_comment, "; ");
+    // printf("DEBUG: 663\n");
+
+    // indent_print(2);
+    // printf("DEBUG: parse_var_names\n");
     if (parse_var_names() == ERROR) return (ERROR);
+    // printf("DEBUG: parse_var_names end\n");
     if (token != TCOLON) return (error("Colon is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" : ");
+    if (ENABLE_PRETTY_PRINT) printf(" : "); strcat(casl_comment, " : ");
     if (parse_type() == ERROR) return (ERROR);
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(";\n");
+    if (ENABLE_PRETTY_PRINT) printf(";\n"); strcat(casl_comment, ";");
     while (token == TNAME) {
         indent_print(2);
         if (parse_var_names() == ERROR) return (ERROR);
         if (token != TCOLON) return (error("Colon is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" : ");
+        if (ENABLE_PRETTY_PRINT) printf(" : "); strcat(casl_comment, " : ");
         if (parse_type() == ERROR) return (ERROR);
         if (token != TSEMI) return (error("Semicolon is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(";\n");
+        if (ENABLE_PRETTY_PRINT) printf(";\n"); strcat(casl_comment, ";");
     }
     indent = 0;
+
+    if (ENABLE_PRETTY_PRINT_IN_CASL == 1 && strcmp(subpro_name, "") == 0) {
+        fprintf(caslfp, "%s\n", casl_comment);
+        strcpy(casl_comment, "; ");
+    }
 
     var_decl_flag = 0;
     return (NORMAL);
@@ -471,7 +726,7 @@ int parse_var_names() {
     if (parse_var_name() == ERROR) return (ERROR);
     while (token == TCOMMA) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" , ");
+        if (ENABLE_PRETTY_PRINT) printf(" , "); strcat(casl_comment, " , ");
         if (parse_var_name() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -479,17 +734,26 @@ int parse_var_names() {
 
 // 変数名の構文解析関数
 int parse_var_name() {
+    // printf("DEBUG: parse_var_name\n");
     if (token != TNAME) return (error("Variable name is not found"));
     if (var_decl_flag == 1) {  // 変数宣言部である場合
+        // printf("DEBUG: parse_var_name var_decl_flag == 1\n");
         if (strcmp(subpro_name, "") == 0) {
+            // printf("DEBUG: parse_var_name var_decl_flag == 1 if\n");
             if (set_globalidtab(string_attr, NULL, 0, get_linenum()) == ERROR)
                 return (ERROR);
+            // printf("DEBUG: parse_var_name var_decl_flag == 1 if end\n");
+            
+            // いま追加した変数の宣言をcaslfpに書き込む
+            fprintf(caslfp, "$%s\tDC\t0\n", string_attr);
         } else {
+            // printf("DEBUG: parse_var_name var_decl_flag == 1 else\n");
             // char tmpstring[MAXSTRSIZE];
             // sprintf(tmpstring, "%s:%s", string_attr, subpro_name);
             if (set_localidtab(string_attr, subpro_name, NULL, 0, get_linenum()) == ERROR)
                 return (ERROR);
         }
+        // printf("DEBUG: parse_var_name end\n");
     } else if (formal_params_flag == 1) {  // 仮引数部である場合
         // char tmpstring[MAXSTRSIZE];
         // sprintf(tmpstring, "%s:%s", string_attr, subpro_name);
@@ -513,7 +777,24 @@ int parse_var_name() {
             if ((p = search_localidtab(string_attr)) == NULL) {
                 if ((p = search_globalidtab(string_attr)) == NULL) {
                     return (error("Variable is not defined2"));
+                } else {
+                    char tmpstring2[MAXSTRSIZE];
+                    sprintf(tmpstring2, "GR1,$%s", p->name); // <<<<<<<<
+                    gen_code("LD", tmpstring2);
                 }
+            } else {
+                char tmpstring2[MAXSTRSIZE];
+                // 仮引数で参照されている場合
+                if (p->ispara == 1) {
+                    sprintf(tmpstring2, "GR1,$$%s%%%s", p->name, p->procname);
+                    gen_code("LD", tmpstring2);
+                } 
+                // 仮引数以外で参照されている場合
+                else {
+                    sprintf(tmpstring2, "GR1,$%s%%%s", p->name, p->procname);
+                    gen_code("LAD", tmpstring2); //FIXME:　LDに変更したほうがいいかも
+                }
+            
             }
         }
         // 参照行番号を記録するための構造体を確保
@@ -535,7 +816,10 @@ int parse_var_name() {
             p->irefp = q;
         }
     }
-    if (ENABLE_PRETTY_PRINT) printf("%s", string_attr);
+    if (ENABLE_PRETTY_PRINT) printf("%s", string_attr); 
+    // if (formal_params_flag == 1 || var_decl_flag == 1) {
+        strcat(casl_comment, string_attr);
+    // }
     token = scan();
     return (NORMAL);
 }
@@ -660,7 +944,8 @@ int parse_standard_type() {
             }
         }
 
-        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]); 
+        if (formal_params_flag == 1 || subpro_decl_flag == 1 || var_decl_flag == 1) strcat(casl_comment, tokenstr[token]);
         token = scan();
         int normal = 0;  // Declare the identifier normal
         return (NORMAL);
@@ -680,11 +965,11 @@ int parse_array_type() {
 
     if (token != TARRAY) return (error("Keyword 'array' is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf("array");
+    if (ENABLE_PRETTY_PRINT) printf("array"); strcat(casl_comment, "array");
     if (token != TLSQPAREN)
         return (error("Left square parenthesis is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" [ ");
+    if (ENABLE_PRETTY_PRINT) printf(" [ "); strcat(casl_comment, " [ ");
     if (token != TNUMBER) return (error("Number is not found"));
     token = scan();
 
@@ -692,13 +977,16 @@ int parse_array_type() {
     tp->arraysize = num_attr;
 
     if (ENABLE_PRETTY_PRINT) printf("%d", num_attr);
+    char tmpstring[MAXSTRSIZE];
+    sprintf(tmpstring, "%d", num_attr);
+    strcat(casl_comment, tmpstring);;
     if (token != TRSQPAREN)
         return (error("Right square parenthesis is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" ] ");
+    if (ENABLE_PRETTY_PRINT) printf(" ] "); strcat(casl_comment, " ] ");
     if (token != TOF) return (error("Keyword 'of' is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf("of ");
+    if (ENABLE_PRETTY_PRINT) printf("of "); strcat(casl_comment, "of ");
 
     // 配列型の要素の型を記録
     struct TYPE *etp;
@@ -758,8 +1046,10 @@ int parse_subpro_decl() {
     indent_print(1);
     if (token != TPROCEDURE) return (error("Keyword 'procedure' is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf("procedure ");
+    if (ENABLE_PRETTY_PRINT) printf("procedure "); strcat(casl_comment, "procedure ");
     if (parse_procedure_name() == ERROR) return (ERROR);
+
+    // strcat(casl_comment, subpro_name);
 
     if (token == TLPAREN) {
         if (parse_formal_params() == ERROR) return (ERROR);
@@ -783,12 +1073,73 @@ int parse_subpro_decl() {
     }
     if (token != TSEMI) return (error("Semicolon is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(";\n");
+    if (ENABLE_PRETTY_PRINT) printf(";\n"); strcat(casl_comment, ";");
+
+    // 仮引数部の変数リストを末尾から遡って，procnameがsubpro_nameのものそれぞれについて，
+    // $$n%kazuyomikomi
+    //      DC    0
+    // みたいにcaslfpに書き込む
+    struct ID *p;
+    for (p = localidroot; p != NULL; p = p->nextp) {
+        if (strcmp(p->procname, subpro_name) == 0) {
+            fprintf(caslfp, "$$%s%%%s\n", p->name, p->procname);
+            gen_code("DC", "0");
+        }
+    }
+
+    if (ENABLE_PRETTY_PRINT_IN_CASL) fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
+
     if (token == TVAR) {
         if (parse_var_decl() == ERROR) return (ERROR);
+
+        // 副プログラム宣言内の変数表から，procnameがsubpro_nameかつ，isparaが0のものを
+        // $data%goukei
+        //      DC    0
+        // みたいにcaslfpに書き込む
+        struct ID *p;
+        for (p = localidroot; p != NULL; p = p->nextp) {
+            if (strcmp(p->procname, subpro_name) == 0 && p->ispara == 0) {
+                fprintf(caslfp, "$%s%%%s\n", p->name, p->procname);
+                gen_code("DC", "0");
+            }
+        }
+        if (ENABLE_PRETTY_PRINT_IN_CASL) fprintf(caslfp, "%s\n", casl_comment);
+        strcpy(casl_comment, "; ");
     }
+    
     // 副プログラム宣言内でないことを示す
     subpro_decl_flag = 0;
+
+    fprintf(caslfp, "$%s\n", subpro_name);
+
+    // 仮引数が1個以上ある場合は，POP GR2を書き込む
+    int formal_params_count = 0;
+    struct ID *q;
+    for (q = localidroot; q != NULL; q = q->nextp) {
+        if (strcmp(q->procname, subpro_name) == 0 && q->ispara == 1) {
+            formal_params_count++;
+        }
+    }
+    if (formal_params_count > 0) {
+        gen_code("POP", "GR2");
+    }
+
+    // 副プログラム宣言内の変数表を確認して，procnameがsubpro_nameかつisparaが1のものについて
+    // POP GR1
+    // ST GR1,$$s%goukei
+    // みたいにcaslfpに書き込む
+    struct ID *r;
+    for (r = localidroot; r != NULL; r = r->nextp) {
+        if (strcmp(r->procname, subpro_name) == 0 && r->ispara == 1) {
+            gen_code("POP", "GR1");
+            fprintf(caslfp, "\tST\tGR1,$$%s%%%s\n", r->name, r->procname);
+        }
+    }
+
+    if(formal_params_count > 0) {
+        gen_code("PUSH", "0,GR2");
+    }
 
     indent = 1;
     if (parse_comp_stmt() == ERROR) return (ERROR);
@@ -805,6 +1156,7 @@ int parse_subpro_decl() {
 
     // 副プログラム宣言内の変数表を初期化
     init_localidtab();
+    gen_code("RET", "");
 
     strcpy(subpro_name, "");
     return (NORMAL);
@@ -861,7 +1213,7 @@ int parse_procedure_name() {
             p->irefp = q;
         }
     }
-    if (ENABLE_PRETTY_PRINT) printf("%s", string_attr);
+    if (ENABLE_PRETTY_PRINT) printf("%s", string_attr); strcat(casl_comment, string_attr);
     token = scan();
     return (NORMAL);
 }
@@ -871,24 +1223,24 @@ int parse_formal_params() {
     formal_params_flag = 1;
     if (token != TLPAREN) return (error("Left parenthesis is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" ( ");
+    if (ENABLE_PRETTY_PRINT) printf(" ( "); strcat(casl_comment, " ( ");
     if (parse_var_names() == ERROR) return (ERROR);
     if (token != TCOLON) return (error("Colon is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" : ");
+    if (ENABLE_PRETTY_PRINT) printf(" : "); strcat(casl_comment, " : ");
     if (parse_type() == ERROR) return (ERROR);
     while (token == TSEMI) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf("; ");
+        if (ENABLE_PRETTY_PRINT) printf("; "); strcat(casl_comment, "; ");
         if (parse_var_names() == ERROR) return (ERROR);
         if (token != TCOLON) return (error("Colon is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" : ");
+        if (ENABLE_PRETTY_PRINT) printf(" : "); strcat(casl_comment, " : ");
         if (parse_type() == ERROR) return (ERROR);
     }
     if (token != TRPAREN) return (error("Right parenthesis is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" )");
+    if (ENABLE_PRETTY_PRINT) printf(" )"); strcat(casl_comment, " )");
     formal_params_flag = 0;
     return (NORMAL);
 }
@@ -899,7 +1251,12 @@ int parse_comp_stmt() {
     token = scan();
     int original_indent = indent;
     indent_print(indent);
+
     if (ENABLE_PRETTY_PRINT) printf("begin\n");
+    strcat(casl_comment, "begin");
+    if (ENABLE_PRETTY_PRINT_IN_CASL) fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
+
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
     while (token == TSEMI) {
@@ -920,7 +1277,13 @@ int parse_comp_stmt() {
     }
     indent_print(original_indent);
     token = scan();
+    if (strcmp(subpro_name, "") != 0) {
+        // gen_code("RET", "");
+    }
     if (ENABLE_PRETTY_PRINT) printf("end");
+    strcat(casl_comment, "end");
+    if (ENABLE_PRETTY_PRINT_IN_CASL) fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
     return (NORMAL);
 }
 
@@ -954,44 +1317,97 @@ int parse_stmt() {
 
 // 条件文の構文解析関数
 int parse_cond_stmt() {
+    int label1, label2;
     indent_print(indent);
     if (token != TIF) return (error("Keyword 'if' is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf("if ");
+    if (ENABLE_PRETTY_PRINT) printf("if "); strcat(casl_comment, "if ");
     if_indent = indent;
     if (parse_expression() == ERROR) return (ERROR);
+    // parse_expression()が条件式のコードを生成していると仮定できるので
+    // 新たなラベルL0001を確保して
+    label1 = get_label_num();
+    // CPA     GR1,GR0
+    gen_code("CPA", "GR1,GR0");
+    // JZE     L0001
+    gen_code_label("JZE", label1);
+    // を生成する
+
     if (token != TTHEN) return (error("Keyword 'then' is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" then\n");
+    if (ENABLE_PRETTY_PRINT) printf(" then\n"); strcat(casl_comment, " then");
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
+    // parse_stmt()がthen節のコードを生成していると仮定できるので
     if (token == TELSE) {
-        if (ENABLE_PRETTY_PRINT) printf("\n");
+        // 新たなラベルL0002を確保して
+        label2 = get_label_num();
+        // JUMP    L0002
+        gen_code_label("JUMP", label2);
+        // L0001
+        gen_label(label1);
+        // を生成する
+
+        if (ENABLE_PRETTY_PRINT) printf("\n"); strcat(casl_comment, " ");
         token = scan();
         indent_print(if_indent);
-        if (ENABLE_PRETTY_PRINT) printf("else\n");
+        if (ENABLE_PRETTY_PRINT) printf("else\n"); strcat(casl_comment, "else");
         indent = if_indent + 1;
         if (parse_stmt() == ERROR) return (ERROR);
+        // parse_stmt()がelse節のコードを生成していると仮定できるので
+        // L0002
+        gen_label(label2);
+        // を生成する
+    } else {
+        // L0001
+        gen_label(label1);
     }
+
+    fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
     return (NORMAL);
 }
 
 // 繰り返し文の構文解析関数
 int parse_iter_stmt() {
+    int roop_label;
+    roop_label = get_label_num();
+    gen_label(roop_label);
+
     while_flag = 1;
     indent_print(indent);
     if (token != TWHILE) return (error("Keyword 'while' is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf("while ");
+    if (ENABLE_PRETTY_PRINT) printf("while "); strcat(casl_comment, "while ");
+
+    // parse_expression()が条件式のコードを生成していると仮定できるので
+    // 新たなラベルL0003を確保して
+    int label1 = get_label_num();
+    break_label = label1;
     if (parse_expression() == ERROR) return (ERROR);
+    // CPA     GR1,GR0
+    gen_code("CPA", "GR1,GR0");
+    // JZE     L0003
+    gen_code_label("JZE", label1);
+
+
     if (token != TDO) return (error("Keyword 'do' is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" do\n");
+    if (ENABLE_PRETTY_PRINT) printf(" do\n"); strcat(casl_comment, " do");
+
+    fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
     indent++;
     if (parse_stmt() == ERROR) return (ERROR);
+
+    gen_code_label("JUMP", roop_label);
+    gen_label(label1);
+
     indent--;
     indent--;
     // while_flag = 0;
+    fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
     return (NORMAL);
 }
 
@@ -999,6 +1415,9 @@ int parse_iter_stmt() {
 int parse_exit_stmt() {
     indent_print(indent);
     if (token != TBREAK) return (error("Keyword 'break' is not found"));
+
+    gen_code_label("JUMP", break_label);
+
     token = scan();
     if (ENABLE_PRETTY_PRINT) printf("break");
     // indent--;
@@ -1013,27 +1432,57 @@ int parse_call_stmt() {
     call_stmt_flag = 1;
     indent_print(indent);
     if (token != TCALL) return (error("Keyword 'call' is not found"));
+    strcat(casl_comment, "call ");
     token = scan();
+    char tmp_procname[MAXSTRSIZE];
+    strcpy(tmp_procname, string_attr);
     if (parse_procedure_name() == ERROR) return (ERROR);
     if (token == TLPAREN) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" ( ");
+        if (ENABLE_PRETTY_PRINT) printf(" ( "); strcat(casl_comment, " ( ");
         if (parse_expressions() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )"); strcat(casl_comment, " ) ");
     }
     indent--;
+
+    // 大域変数表を検索して，procnameがtmp_procnameのものを探す
+    struct ID *p;
+    if ((p = search_globalidtab(tmp_procname)) == NULL) {
+        return (error("Procedure name is not defined"));
+    }
+    fprintf(caslfp, "\tCALL\t$%s\n", tmp_procname);
+
+    fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
     call_stmt_flag = 0;
+
     return (NORMAL);
 }
 
 // 式の並びの構文解析関数
 int parse_expressions() {
     if (parse_expression() == ERROR) return (ERROR);
+
+
+    if (is_expression_opr== 1) {
+        // int tmplabel = get_label_num();
+        // gen_code_opr_label("LAD", "GR2", tmplabel);
+        gen_code("LAD","GR2,=0"); //TODO: ここは要検討
+
+
+        gen_code("ST", "GR1,0,GR2");
+        gen_code("PUSH", "0,GR2");
+        // TODO: mayuleo645のadd_DCListの記述を追加
+    } else {
+        gen_code("PUSH", "0,GR1");
+    }
+
+
     while (token == TCOMMA) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" , ");
+        if (ENABLE_PRETTY_PRINT) printf(" , "); strcat(casl_comment, " , ");
         if (parse_expression() == ERROR) return (ERROR);
     }
     return (NORMAL);
@@ -1042,6 +1491,7 @@ int parse_expressions() {
 // 戻り文の構文解析関数
 int parse_return_stmt() {
     indent_print(indent);
+    gen_code("RET", "");
     if (token != TRETURN) return (error("Keyword 'return' is not found"));
     token = scan();
     if (ENABLE_PRETTY_PRINT) printf("return");
@@ -1055,21 +1505,93 @@ int parse_assign_stmt() {
     if (parse_left_part() == ERROR) return (ERROR);
     if (token != TASSIGN) return (error("Assignment operator is not found"));
     token = scan();
-    if (ENABLE_PRETTY_PRINT) printf(" := ");
+    if (ENABLE_PRETTY_PRINT) printf(" := "); strcat(casl_comment, " := ");
     if (parse_expression() == ERROR) return (ERROR);
+
+    if (is_vari_left_part == 0) {
+        gen_code("POP", "GR2");
+    }
+    // fprintf(caslfp, ">>>>>>>>>>DEBUG POINT 0\n");
+    // fprintf(caslfp, "is_vari_left_part = %d\n", is_vari_left_part);
+    // fprintf(caslfp, "is_left_part = %d\n", is_left_part);
+    if (is_vari_left_part == 1) {
+        struct ID *i;
+        char tmpstring[MAXSTRSIZE];
+
+        if ((i = search_localidtab(left_variable)) != NULL) {
+            sprintf(tmpstring, "$%s%%%s", i->name, i->procname);
+            // fprintf(caslfp, ">>>>>>>>>>DEBUG POINT 1\n");
+            // 左辺部が配列の場合
+            if (is_left_array == 1) {
+                char tmpstring2[MAXSTRSIZE];
+                sprintf(tmpstring2, "GR1,%s,GR2", tmpstring);
+                gen_code("ST", tmpstring2);
+            } else {
+                char tmpstring2[MAXSTRSIZE];
+                sprintf(tmpstring2, "GR1,%s", tmpstring);
+                gen_code("ST", tmpstring2);
+            }
+        
+        } else if ((i = search_globalidtab(left_variable)) != NULL) {
+            sprintf(tmpstring, "$%s", i->name);
+            // 左辺部が配列の場合
+            if (is_left_array == 1) {
+                char tmpstring2[MAXSTRSIZE];
+                sprintf(tmpstring2, "GR1,%s,GR2", tmpstring);
+                gen_code("ST", tmpstring2);
+            } else {
+                char tmpstring2[MAXSTRSIZE];
+                sprintf(tmpstring2, "GR1,%s", tmpstring);
+                gen_code("ST", tmpstring2);
+            }
+        }
+    } else if (is_left_array) {
+        fprintf(caslfp, "\tST\tGR1,%s,GR2\n", current_array_name);
+    } else {
+        gen_code("ST", "GR1,0,GR2");
+    }
+    is_left_array = 0;
+    is_vari_left_part = 0;
+
+    if (ENABLE_PRETTY_PRINT_IN_CASL) fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
     indent--;
     return (NORMAL);
 }
 
 // 左辺部の構文解析関数
 int parse_left_part() {
+    is_left_part = 1;
     if (parse_variable() == ERROR) return (ERROR);
+
+    char tmpstring[MAXSTRSIZE];
+    struct ID *i;
+    if ((i = search_localidtab(left_variable)) != NULL) {
+        if(i->ispara == 1) {
+            // sprintf(tmpstring, "GR1,$%s%%%s<<<<", i->name, i->procname);// TODO:復活するかも
+            // gen_code("LD", tmpstring);
+            gen_code("PUSH", "0,GR1");
+            // is_vari_left_part = 1;
+        } else {
+            is_vari_left_part = 1;
+        }
+    } else if ((i = search_globalidtab(left_variable)) != NULL) {
+        is_vari_left_part = 1;
+    }
+    is_left_part = 0;
     return (NORMAL);
 }
 
 // 変数の構文解析関数
 int parse_variable() {
+    char variable_name[MAXSTRSIZE];
+    sprintf(variable_name, "%s", string_attr);
     if (parse_var_name() == ERROR) return (ERROR);
+
+    if (is_left_part == 1) {
+        sprintf(left_variable, "%s", string_attr);
+    }
+
     if (token == TLSQPAREN) {
         token = scan();
         if (ENABLE_PRETTY_PRINT) printf(" [ ");
@@ -1078,47 +1600,215 @@ int parse_variable() {
             return (error("Right square parenthesis is not found"));
         token = scan();
         if (ENABLE_PRETTY_PRINT) printf(" ]");
+
+        strcpy(current_array_name, variable_name);
+        if(is_left_part == 1) {
+            is_left_array = 1;
+        }
+        if(var_decl_flag == 0) {
+            char tmpstring[MAXSTRSIZE];
+            struct ID *i;
+            if ((i = search_localidtab(variable_name)) != NULL) {
+                sprintf(tmpstring, "GR2,%d", i->itp->arraysize);
+                gen_code("LAD", tmpstring);
+            } else if ((i = search_globalidtab(variable_name)) != NULL) {
+                sprintf(tmpstring, "GR2,%d", i->itp->arraysize);
+                gen_code("LAD", tmpstring);
+            }
+
+            gen_code("CPA", "GR2,GR1");
+            gen_code("JMI", "EROV");
+            gen_code("JZE", "EROV");
+            gen_code("CPA", "GR1,GR0");
+            gen_code("JMI", "EROV");
+        }
     }
     return (NORMAL);
 }
 
 // 式の構文解析関数
 int parse_expression() {
+    int opr;
+    is_expression_opr = 0;
+    is_opr = 0;
     if (parse_simple_expression() == ERROR) return (ERROR);
     while (token == TEQUAL || token == TNOTEQ || token == TLE ||
            token == TLEEQ || token == TGR || token == TGREQ) {
-        if (ENABLE_PRETTY_PRINT) printf(" ");
+        is_opr = 1;
+        is_expression_opr = 1;
+        opr = token;
+        
+        gen_code("PUSH", "0,GR1");
+
+
+        if (ENABLE_PRETTY_PRINT) printf(" "); strcat(casl_comment, " ");
         if (parse_relational_op() == ERROR) return (ERROR);
-        if (ENABLE_PRETTY_PRINT) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" "); strcat(casl_comment, " ");
         if (parse_simple_expression() == ERROR) return (ERROR);
+        is_opr = 0;
+
+        //TODO:ここに関係演算子の処理をかく
+        gen_code("POP", "GR2");
+        gen_code("CPA", "GR2,GR1");
+        int label1 = get_label_num();
+        int label2 = get_label_num();
+
+        switch(current_relational_opr) {
+            case TEQUAL:
+                gen_code_label("JZE", label1);
+                gen_code("LD","GR1,GR0");
+                gen_code_label("JUMP", label2);
+                gen_label(label1);
+                gen_code("LAD", "GR1,1");
+                gen_label(label2);
+                break;
+            case TNOTEQ:
+                gen_code_label("JNZ", label1);
+                gen_code("LD","GR1,GR0");
+                gen_code_label("JUMP", label2);
+                gen_label(label1);
+                gen_code("LAD", "GR1,1");
+                gen_label(label2);
+                break;
+            case TLE:
+                gen_code_label("JMI", label1);
+                gen_code("LD","GR1,GR0");
+                gen_code_label("JUMP", label2);
+                gen_label(label1);
+                gen_code("LAD", "GR1,1");
+                gen_label(label2);
+                break;
+            case TLEEQ:
+                gen_code_label("JPL", label1);
+                gen_code("LAD","GR1,1");
+                gen_code_label("JUMP", label2);
+                gen_label(label1);
+                gen_code("LD", "GR1,GR0");
+                gen_label(label2);
+                break;
+            case TGR:
+                gen_code_label("JPL", label1);
+                gen_code("LD","GR1,GR0");
+                gen_code_label("JUMP", label2);
+                gen_label(label1);
+                gen_code("LAD", "GR1,1");
+                gen_label(label2);
+                break;
+            case TGREQ:
+                gen_code_label("JMI", label1);
+                gen_code("LAD","GR1,1");
+                gen_code_label("JUMP", label2);
+                gen_label(label1);
+                gen_code("LD", "GR1,GR0");
+                gen_label(label2);
+                break;
+            default:
+                error("Relational expression error");
+            break;
+        }
+
     }
     return (NORMAL);
 }
 
 // 単純式の構文解析関数
 int parse_simple_expression() {
+    // printf(">>>>>>parse_simple_expression\n");
+    int opr;
+    int is_minus = 0;
     if (token == TPLUS || token == TMINUS) {
-        if (ENABLE_PRETTY_PRINT) printf("%s ", tokenstr[token]);
+        is_minus = 1;
+        if (ENABLE_PRETTY_PRINT) printf("%s ", tokenstr[token]); strcat(casl_comment, tokenstr[token]);
         token = scan();
     }
     if (parse_term() == ERROR) return (ERROR);
+
+    if (is_minus == 1) {
+        gen_code("LAD", "GR2,-1");
+        gen_code("MULA", "GR1,GR2");
+        gen_code("JOV", "EOVF");
+    }
+
     while (token == TPLUS || token == TMINUS || token == TOR) {
-        if (ENABLE_PRETTY_PRINT) printf(" ");
+
+        is_expression_opr = 1;
+        is_opr = 1;
+        opr = token;
+        gen_code("PUSH", "0,GR1");
+
+
+        if (ENABLE_PRETTY_PRINT) printf(" "); strcat(casl_comment, " ");
         if (parse_additive_op() == ERROR) return (ERROR);
-        if (ENABLE_PRETTY_PRINT) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" "); strcat(casl_comment, " ");
         if (parse_term() == ERROR) return (ERROR);
+
+        gen_code("POP", "GR2");
+
+        if (opr == TPLUS) {
+            gen_code("ADDA", "GR1,GR2");
+            gen_code("JOV", "EOVF");
+        } else if (opr == TMINUS) {
+            gen_code("SUBA", "GR2,GR1");
+            gen_code("JOV", "EOVF");
+            gen_code("LD", "GR1,GR2");
+        } else if (opr == TOR) {
+            gen_code("OR", "GR1,GR2");
+        }
+        is_opr = 0;
     }
     return (NORMAL);
 }
 
 // 項の構文解析関数
 int parse_term() {
+    // ここに演算子を覚える作業用の変数を追加する
+    int opr;
     if (parse_factor() == ERROR) return (ERROR);
+    // parse_factor()が部分式のコードを生成してくれる(式の結果はGR1に入っている)
+    // 部分式の結果をスタックに退避
+    // PUSH    0,GR1
+
+    // gen_code(">>>>>PUSH", "0,GR1");
+
+    struct ID *p;
+    if ((p = search_localidtab(string_attr)) != NULL) {
+        if (p->ispara == 1 && call_stmt_flag == 1) {
+            gen_code("LD", "GR1,0,GR1");
+        }
+    }
+
     while (token == TSTAR || token == TDIV || token == TAND) {
-        if (ENABLE_PRETTY_PRINT) printf(" ");
+        is_expression_opr = 1;
+        is_opr = 1;
+        // ここで演算子を覚える
+        opr = token;
+        gen_code("PUSH", "0,GR1");
+        if (ENABLE_PRETTY_PRINT) printf(" "); strcat(casl_comment, " ");
         if (parse_multiplicative_op() == ERROR) return (ERROR);
-        if (ENABLE_PRETTY_PRINT) printf(" ");
+        if (ENABLE_PRETTY_PRINT) printf(" "); strcat(casl_comment, " ");
         if (parse_factor() == ERROR) return (ERROR);
+        // parse_factor()が部分式のコードを生成してくれる(式の結果はGR1に入っている)
+        // ここで被演算子が2つ揃うので，次のようにコードを生成する
+        // POP     GR2        退避した結果(左の因子)をGR2に戻す
+        gen_code("POP", "GR2");
+        // もしoprがTSTARなら，MULA    GR1,GR2
+        if (opr == TSTAR) {
+            gen_code("MULA", "GR1,GR2");
+            gen_code("JOV", "EOVF");
+        }
+        // もしoprがTDIVなら，DIVA    GR2,GR1
+        //                 LD      GR1,GR2
+        else if (opr == TDIV) {
+            gen_code("DIVA", "GR2,GR1");
+            gen_code("JOV", "E0DIV");
+            gen_code("LD", "GR1,GR2");
+        }
+        // もしoprがTANDなら，AND     GR1,GR2
+        else if (opr == TAND) {
+            gen_code("AND", "GR1,GR2");
+        }
+        // を生成する．(GR1に結果が入る)
+        is_opr = 0;
     }
     return (NORMAL);
 }
@@ -1127,30 +1817,149 @@ int parse_term() {
 int parse_factor() {
     if (token == TNAME) {
         if (parse_variable() == ERROR) return (ERROR);
+        char tmpstring[MAXSTRSIZE];
+        struct ID *p;
+        // ローカルを探して，無ければグローバルを探す
+        if ((p = search_localidtab(string_attr)) != NULL) {
+            sprintf(tmpstring, "$%s%%%s", p->name, p->procname);
+            if (p->ispara == 0 && call_stmt_flag == 1) {
+                fprintf(caslfp, "\tLAD\tGR1,%s\n", tmpstring);
+            } else {
+                // fprintf(caslfp, "\tLD\tGR1,%s<<<<<\n", tmpstring); //TODO: 復活するかも
+            }
+            if (p->ispara == 1 && call_stmt_flag == 0) {
+                gen_code("LD", "GR1,0,GR1");
+            }
+        } 
+        else if ((p = search_globalidtab(string_attr)) != NULL) {
+            sprintf(tmpstring, "$%s", p->name);
+            if (call_stmt_flag == 0) {
+                // fprintf(caslfp, "\tLD\tGR1<<<<<<<1627,%s\n", tmpstring);
+            } else {
+                fprintf(caslfp, "\tLAD\tGR1,%s\n", tmpstring);
+                if ((is_opr == 0) && !(token == TCOMMA || token == TRPAREN) && formal_params_flag == 0) {
+                    gen_code("LD", "GR1,0,GR1");
+                }
+            }
+        } else {
+            return (error("Variable name is not defined"));
+        }
+        // free(p); // ここでfreeするとエラーが出る
+
     } else if (token == TNUMBER || token == TFALSE || token == TTRUE ||
                token == TSTRING) {
+
+
+
+        if (token == TNUMBER) {
+            fprintf(caslfp, "\tLAD\tGR1,%d\n", num_attr);
+        } else if (token == TFALSE) {
+            gen_code("LD", "GR1,0"); // もしかしたら"GR1,GR0"になるかも
+            is_constant_false = 1;
+        } else if (token == TTRUE) {
+            gen_code("LAD", "GR1,1");
+            is_constant_true = 1;
+        } else if (token == TSTRING) {
+            // 文字列の長さが1でなければエラー
+            if (strlen(string_attr) != 3) {
+                return (error("String length is not 1"));
+            }
+            // 文字列の1文字目をGR1にロード
+            fprintf(caslfp, "\tLAD\tGR1,%d\n", string_attr[1]);
+        }
+
+
         if (parse_constant() == ERROR) return (ERROR);
     } else if (token == TLPAREN) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf("( ");
+        if (ENABLE_PRETTY_PRINT) printf("( "); strcat(casl_comment, "( ");
         if (parse_expression() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )"); strcat(casl_comment, " )");
     } else if (token == TNOT) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf("not ");
+        if (ENABLE_PRETTY_PRINT) printf("not "); strcat(casl_comment, "not ");
         if (parse_factor() == ERROR) return (ERROR);
+
+        // NOT演算子のコードを生成
+        int nextlabel = get_label_num();
+        gen_code("LAD", "GR2,1");
+        gen_code("CPA", "GR0,GR1");
+        gen_code_label("JZE", nextlabel);
+        gen_code("LD", "GR1,GR2");
+        gen_label(nextlabel);
+        gen_code("XOR","GR1,GR1");
+
     } else if (token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
-        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
-        token = scan();
+        int tmpresult = token;
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]); strcat(casl_comment, tokenstr[token]);
+
+        // 標準型のparseを忘れていたので追加
+        if (parse_standard_type() == ERROR) return (ERROR);
+
+        // token = scan();
         if (token != TLPAREN) return (error("Left parenthesis is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" ( ");
+        if (ENABLE_PRETTY_PRINT) printf(" ( "); strcat(casl_comment, " ( ");
+        int tmpexpression = token;
         if (parse_expression() == ERROR) return (ERROR);
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )"); strcat(casl_comment, " )");
+
+        if (tmpexpression == TINTEGER) {
+            if (tmpresult == TINTEGER) {
+                // NONE
+            } else if (tmpresult == TBOOLEAN) {
+                gen_code("CPA", "GR1,GR0");
+                int tmplabel = get_label_num();
+                gen_code_label("JZE", tmplabel);
+                gen_code("LAD", "GR1,1");
+                gen_label(tmplabel);
+            } else if (tmpresult == TCHAR) {
+                gen_code("LAD", "GR2,127");
+                gen_code("AND", "GR1,GR2");
+            }
+        } else if (tmpexpression == TBOOLEAN) {
+            if (tmpresult == TINTEGER) {
+                if (is_constant_true == 0 && is_constant_false == 0) {
+                    gen_code("CPA", "GR1,GR0");
+                    int tmplabel = get_label_num();
+                    gen_code_label("JZE", tmplabel);
+                    gen_code("LAD", "GR1,1");
+                    gen_label(tmplabel);
+                }
+                is_constant_true = 0;
+                is_constant_false = 0;
+            } else if (tmpresult == TBOOLEAN) {
+                // NONE
+            } else if (tmpresult == TCHAR) {
+                if (is_constant_true == 0 && is_constant_false == 0) {
+                    gen_code("CPA", "GR1,GR0");
+                    int tmplabel = get_label_num();
+                    gen_code_label("JZE", tmplabel);
+                    gen_code("LAD", "GR1,1");
+                    gen_label(tmplabel);
+                }
+                is_constant_true = 0;
+                is_constant_false = 0;
+            }
+        } else if (tmpexpression == TCHAR) {
+            if (tmpresult == TINTEGER) {
+                // NONE
+            } else if (tmpresult == TBOOLEAN) {
+                gen_code("CPA", "GR1,GR0");
+                int tmplabel = get_label_num();
+                gen_code_label("JZE", tmplabel);
+                gen_code("LAD", "GR1,1");
+                gen_label(tmplabel);
+            } else if (tmpresult == TCHAR) {
+                // NONE
+            }
+        }
+
+
     } else {
         return (error("Factor is not found"));
     }
@@ -1161,16 +1970,22 @@ int parse_factor() {
 int parse_constant() {
     if (token == TNUMBER) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf("%d", num_attr);
+        if (ENABLE_PRETTY_PRINT) printf("%d", num_attr); 
+        char tmpstring[MAXSTRSIZE];
+        sprintf(tmpstring, "%d", num_attr);
+        strcat(casl_comment, tmpstring);
     } else if (token == TSTRING) {
         token = scan();
         if (ENABLE_PRETTY_PRINT) printf("\'%s\'", string_attr);
+        char tmpstring[MAXSTRSIZE];
+        sprintf(tmpstring, "\'%s\'", string_attr);
+        strcat(casl_comment, tmpstring);
     } else if (token == TFALSE) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf("false");
+        if (ENABLE_PRETTY_PRINT) printf("false"); strcat(casl_comment, "false");
     } else if (token == TTRUE) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf("true");
+        if (ENABLE_PRETTY_PRINT) printf("true"); strcat(casl_comment, "true");
     } else {
         return (error("Constant is not found"));
     }
@@ -1180,7 +1995,7 @@ int parse_constant() {
 // 乗算演算子の構文解析関数
 int parse_multiplicative_op() {
     if (token == TSTAR || token == TDIV || token == TAND) {
-        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]); strcat(casl_comment, tokenstr[token]);
         token = scan();
     } else {
         return (error("Multiplicative operator is not found"));
@@ -1191,7 +2006,7 @@ int parse_multiplicative_op() {
 // 加算演算子の構文解析関数
 int parse_additive_op() {
     if (token == TPLUS || token == TMINUS || token == TOR) {
-        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]); strcat(casl_comment, tokenstr[token]);
         token = scan();
     } else {
         return (error("Additive operator is not found"));
@@ -1201,9 +2016,10 @@ int parse_additive_op() {
 
 // 関係演算子の構文解析関数
 int parse_relational_op() {
+    current_relational_opr = token;
     if (token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ ||
         token == TGR || token == TGREQ) {
-        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
+        if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]); strcat(casl_comment, tokenstr[token]);
         token = scan();
     } else {
         return (error("Relational operator is not found"));
@@ -1213,70 +2029,129 @@ int parse_relational_op() {
 
 // 入力文の構文解析関数
 int parse_input_stmt() {
+    int tmp = token;
+    // strcat(casl_comment, "; ");
     indent_print(indent);
     if (token != TREAD && token != TREADLN)
         return (error("Keyword 'read' or 'readln' is not found"));
-    if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
+    if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]); strcat(casl_comment, tokenstr[token]);
     token = scan();
     if (token == TLPAREN) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" ( ");
+        if (ENABLE_PRETTY_PRINT) printf(" ( "); strcat(casl_comment, " ( ");
+
+        // if (token == TNAME) {
+        //     strcat(casl_comment, string_attr);
+        //     // string_attrを局所変数表から検索して，
+        //     // LD GR1,$$n%kazuyomikomi
+        //     // みたいにcaslfpに書き込む
+        //     struct ID *p;
+        //     if ((p = search_localidtab(string_attr)) == NULL) {
+        //         return (error("Variable name is not defined"));
+        //     }
+        //     if (p->ispara == 1) {
+        //         fprintf(caslfp, "\tLD\tGR1,$$%s%%%s\n", p->name, p->procname);
+        //     } else {
+        //         fprintf(caslfp, "\tLD\tGR1,$%s%%%s\n", p->name, p->procname);
+        //     }
+        //     if (p->itp->ttype == TPINT) {
+        //         gen_code("CALL", "READINT");
+        //     } else if (p->itp->ttype == TPCHAR) {
+        //         gen_code("CALL", "READCHAR");
+        //     }
+        // }
+        
+
         if (parse_variable() == ERROR) return (ERROR);
         while (token == TCOMMA) {
             token = scan();
-            if (ENABLE_PRETTY_PRINT) printf(" , ");
+            if (ENABLE_PRETTY_PRINT) printf(" , "); strcat(casl_comment, " , ");
             if (parse_variable() == ERROR) return (ERROR);
         }
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )"); strcat(casl_comment, " )");
     }
+    gen_code("CALL", "READINT");
+    if (tmp == TREADLN) {
+        gen_code("CALL", "READLINE");
+    }
+
     indent--;
+    fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
     return (NORMAL);
 }
 
 // 出力文の構文解析関数
 int parse_output_stmt() {
+    int tmp = token;
     indent_print(indent);
+    // strcat(casl_comment, "; ");
     if (token != TWRITE && token != TWRITELN)
         return (error("Keyword 'write' or 'writeln' is not found"));
-    if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]);
+    if (ENABLE_PRETTY_PRINT) printf("%s", tokenstr[token]); strcat(casl_comment, tokenstr[token]);
     token = scan();
     if (token == TLPAREN) {
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" ( ");
+        if (ENABLE_PRETTY_PRINT) printf(" ( "); strcat(casl_comment, " ( ");
         if (parse_output_format() == ERROR) return (ERROR);
+        // gen_code("LAD", "GR2,0");
+        // gen_code("CALL", "WRITESTR");
         while (token == TCOMMA) {
             token = scan();
-            if (ENABLE_PRETTY_PRINT) printf(" , ");
+            if (ENABLE_PRETTY_PRINT) printf(" , "); strcat(casl_comment, " , ");
             if (parse_output_format() == ERROR) return (ERROR);
+            // gen_code("LAD", "GR2,0");
+            // gen_code("CALL", "WRITESTR");
         }
+
         if (token != TRPAREN) return (error("Right parenthesis is not found"));
         token = scan();
-        if (ENABLE_PRETTY_PRINT) printf(" )");
+        if (ENABLE_PRETTY_PRINT) printf(" )"); strcat(casl_comment, " )");
     }
     indent--;
+    if (tmp == TWRITELN) {
+        gen_code("CALL", "WRITELINE");
+    }
+    if (ENABLE_PRETTY_PRINT_IN_CASL) fprintf(caslfp, "%s\n", casl_comment);
+    strcpy(casl_comment, "; ");
     return (NORMAL);
 }
 
 // 出力書式の構文解析関数
 int parse_output_format() {
+    int tmp = token;
     if (token == TPLUS || token == TMINUS || token == TNAME ||
         token == TNUMBER || token == TFALSE || token == TTRUE ||
         token == TINTEGER || token == TBOOLEAN || token == TCHAR) {
         if (parse_expression() == ERROR) return (ERROR);
         if (token == TCOLON) {
             token = scan();
-            if (ENABLE_PRETTY_PRINT) printf(" : ");
+            if (ENABLE_PRETTY_PRINT) printf(" : "); strcat(casl_comment, " : ");
             if (token != TNUMBER) return (error("Number is not found"));
             token = scan();
-            if (ENABLE_PRETTY_PRINT) printf("%d", num_attr);
+            if (ENABLE_PRETTY_PRINT) printf("%d", num_attr); 
+            // num_attrを文字列に変換
+            char num_attr_str[MAXSTRSIZE];
+            sprintf(num_attr_str, "%d", num_attr);
+            strcat(casl_comment, num_attr_str);
         }
     } else if (token == TSTRING) {
         token = scan();
         if (ENABLE_PRETTY_PRINT) printf("\'%s\'", string_attr);
+        fprintf(caslfp, "\tLAD\tGR1,=\'%s\'\n", string_attr);
+        strcat(casl_comment, "\'");
+        strcat(casl_comment, string_attr);
+        strcat(casl_comment, "\'");
     } else {
         return (error("Output format is not found"));
+    }
+    gen_code("LAD", "GR2,0");
+    if (tmp == TSTRING) {
+        gen_code("CALL", "WRITESTR");
+    } else {
+        gen_code("CALL", "WRITEINT");
     }
     return (NORMAL);
 }
@@ -1325,7 +2200,7 @@ int main(int nc, char *np[]) {
     token = scan();
 
     // 変数表の第1行を出力
-    printf("%-15s|%-30s|%-15s|%-10s\n", "Name", "Type", "Define", "References");
+    // printf("%-15s|%-30s|%-15s|%-10s\n", "Name", "Type", "Define", "References");
 
     // 構文解析
     parse_program();
